@@ -85,10 +85,10 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
             surface = surfaceColor,
             secondary = accentColor.copy(alpha = 0.7f),
             onPrimary = Color.White,
-            onBackground = onBackground,
-            onSurface = onSurface,
+            onBackground = Color(0xFF111827),
+            onSurface = Color(0xFF1F2937),
             surfaceVariant = surfaceColor.copy(alpha = 0.5f),
-            onSurfaceVariant = onSurface.copy(alpha = 0.7f)
+            onSurfaceVariant = Color(0xFF1F2937).copy(alpha = 0.7f)
         )
     } else {
         darkColorScheme(
@@ -222,18 +222,18 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
             Spacer(Modifier.height(12.dp))
             Text("Goal: Master 82 terms (OWS: 27, SY: 24, ID: 24, PH: 7)", fontSize = 14.sp, fontWeight = FontWeight.Black)
             Spacer(Modifier.height(16.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(end = 16.dp)) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(end = 16.dp)) {
                 items(75) { index ->
                     val d = index + 1
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(30.dp)
                             .clip(CircleShape)
                             .background(if (day == d) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                             .clickable { viewModel.setChallengeDay(d) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(d.toString(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
+                        Text(d.toString(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -460,7 +460,7 @@ fun SetSelector(currentCat: String, currentSet: Int, onSelect: (Int) -> Unit) {
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp),
+            .padding(vertical = 8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -472,13 +472,13 @@ fun SetSelector(currentCat: String, currentSet: Int, onSelect: (Int) -> Unit) {
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .clickable { onSelect(index) }
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     "SET $setNum",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
+                    fontSize = 10.sp,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
                 )
             }
@@ -599,13 +599,13 @@ fun ModeSelector(current: String, onSelect: (String) -> Unit) {
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onSelect(id) }
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     label,
                     fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
                 )
             }
@@ -638,6 +638,12 @@ fun QuizSection(viewModel: VocabViewModel) {
     val quizItems by viewModel.currentQuizBatch
     val quizCount = quizItems.count { it.isAnswered }
     val totalCount = quizItems.size
+    val currentSetIndex by viewModel.currentSetIndex
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(currentSetIndex, quizItems.size) {
+        listState.scrollToItem(0)
+    }
     
     if (quizItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -684,7 +690,8 @@ fun QuizSection(viewModel: VocabViewModel) {
 
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
@@ -695,11 +702,11 @@ fun QuizSection(viewModel: VocabViewModel) {
                 item {
                     Button(
                         onClick = { viewModel.setChallengeMode(false) },
-                        modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("FINISH SESSION", fontWeight = FontWeight.Black)
+                        Text("FINISH SESSION", fontWeight = FontWeight.Black, fontSize = 12.sp)
                     }
                 }
             }
@@ -718,35 +725,35 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        shape = RoundedCornerShape(32.dp),
+            .padding(bottom = 12.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(0.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
     ) {
-        Column(Modifier.padding(24.dp)) {
+        Column(Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(10.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("#${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 }
-                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 quiz.item.w,
-                fontSize = 22.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                lineHeight = 28.sp
+                lineHeight = 22.sp
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             quiz.options.forEach { option ->
                 val isCorrect = option == quiz.item.a
@@ -762,23 +769,21 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     onClick = { onAnswer(option) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .padding(vertical = 3.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = Color.Transparent,
                     border = BorderStroke(1.dp, borderColor)
                 ) {
                     Text(
                         option,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(12.dp),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
+                        fontSize = 12.sp,
                         color = if (quiz.isAnswered && isCorrect) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
- 
             Spacer(Modifier.height(16.dp))
 
             Row(
@@ -788,7 +793,10 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f), RoundedCornerShape(16.dp))
                     .clickable { 
                         if (isShowingThisInsight) viewModel.clearInsight() 
-                        else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
+                        else {
+                            val wordToFetch = if (quiz.item.cat == "ow") quiz.item.a else quiz.item.w
+                            viewModel.fetchInsight(wordToFetch, quiz.item.cat)
+                        }
                     }
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.Center,
@@ -828,6 +836,12 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
 @Composable
 fun LearnSection(viewModel: VocabViewModel, cat: String) {
     val quizItems by viewModel.currentQuizBatch
+    val currentSetIndex by viewModel.currentSetIndex
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    LaunchedEffect(currentSetIndex, quizItems.size) {
+        listState.scrollToItem(0)
+    }
     
     if (quizItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -835,33 +849,37 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
         }
     }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(6.dp), 
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
         itemsIndexed(items = quizItems) { index, quizItem ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text("#${index + 1}", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(quizItem.item.w, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 15.sp)
+                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(quizItem.item.w, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 14.sp)
                         Spacer(Modifier.height(2.dp))
-                        Text(quizItem.item.h, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
+                        Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
                     }
                 }
             }

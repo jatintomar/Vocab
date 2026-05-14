@@ -27,7 +27,14 @@ object AndroidGeminiService {
     )
 
     suspend fun getWordInsight(word: String, category: String): WordInsight? = withContext(Dispatchers.IO) {
-        if (apiKey.isEmpty()) return@withContext null
+        val fallback = WordInsight(
+            word = word,
+            context = "Commonly used in competitive exams to test vocabulary depth.",
+            mnemonic = "Connect this with a similar sounding familiar word for easier recall.",
+            synonyms = emptyList()
+        )
+
+        if (apiKey.isEmpty()) return@withContext fallback
         
         val prompt = """
             Analyze the following English word: "${word}" (Category: ${category}).
@@ -49,13 +56,7 @@ object AndroidGeminiService {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            // Fallback for native app
-            WordInsight(
-                word = word,
-                context = "Commonly used in competitive exams to test vocabulary depth.",
-                mnemonic = "Connect this with a similar sounding familiar word for easier recall.",
-                synonyms = emptyList()
-            )
+            fallback
         }
     }
 

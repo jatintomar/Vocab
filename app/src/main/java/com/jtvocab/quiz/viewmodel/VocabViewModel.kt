@@ -164,7 +164,9 @@ class VocabViewModel : ViewModel() {
                 else -> VocabRepository.idioms
             }.map { it.a }
             
-            val distractors = allAnswers.filter { it != item.a }.shuffled().take(3)
+            val sameInitial = allAnswers.filter { it.startsWith(item.a.take(1), ignoreCase = true) && it != item.a }.shuffled()
+            val remaining = allAnswers.filter { !it.startsWith(item.a.take(1), ignoreCase = true) && it != item.a }.shuffled()
+            val distractors = (sameInitial + remaining).take(3)
             val options = (distractors + item.a).shuffled()
             QuizItem(item, options)
         }
@@ -200,7 +202,9 @@ class VocabViewModel : ViewModel() {
                 else -> VocabRepository.idioms
             }.map { it.a }
             
-            val distractors = allAnswers.filter { it != item.a }.shuffled().take(3)
+            val sameInitial = allAnswers.filter { it.startsWith(item.a.take(1), ignoreCase = true) && it != item.a }.shuffled()
+            val remaining = allAnswers.filter { !it.startsWith(item.a.take(1), ignoreCase = true) && it != item.a }.shuffled()
+            val distractors = (sameInitial + remaining).take(3)
             val options = (distractors + item.a).shuffled()
             QuizItem(item, options)
         }
