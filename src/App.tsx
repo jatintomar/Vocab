@@ -124,30 +124,40 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
     // Smart similarity scoring
     const scored = allPotential.map(candidate => {
       let score = 0;
-      const cWord = candidate.a.toLowerCase();
-      const iWord = item.a.toLowerCase();
+      const cWord = candidate.a.toLowerCase().trim();
+      const iWord = item.a.toLowerCase().trim();
       
       // 1. Prefix match (Very strong similarity)
-      if (cWord.slice(0, 3) === iWord.slice(0, 3)) score += 100;
-      else if (cWord.slice(0, 2) === iWord.slice(0, 2)) score += 50;
-      else if (cWord[0] === iWord[0]) score += 20;
+      if (cWord.slice(0, 4) === iWord.slice(0, 4)) score += 120;
+      else if (cWord.slice(0, 3) === iWord.slice(0, 3)) score += 80;
+      else if (cWord.slice(0, 2) === iWord.slice(0, 2)) score += 40;
+      else if (cWord[0] === iWord[0]) score += 15;
 
-      // 2. Length similarity
+      // 2. Length parity
       const lenDiff = Math.abs(cWord.length - iWord.length);
-      if (lenDiff === 0) score += 10;
-      else if (lenDiff <= 2) score += 5;
+      if (lenDiff === 0) score += 20;
+      else if (lenDiff <= 2) score += 10;
 
       // 3. Suffix match (Common for phrasal verbs or similar word endings)
-      if (cWord.slice(-3) === iWord.slice(-3)) score += 30;
+      if (cWord.slice(-3) === iWord.slice(-3)) score += 35;
+      else if (cWord.slice(-2) === iWord.slice(-2)) score += 15;
+
+      // 4. Character overlap
+      const cChars = new Set(cWord);
+      const iChars = new Set(iWord);
+      const intersection = [...cChars].filter(x => iChars.has(x));
+      score += (intersection.length / Math.max(cChars.size, iChars.size)) * 50;
 
       // Add a bit of randomness to the score to keep it fresh
-      score += Math.random() * 5;
+      score += Math.random() * 10;
 
       return { word: candidate.a, score };
     });
 
     const distractors = scored
       .sort((a, b) => b.score - a.score)
+      .slice(0, 15) // Pick from top 15 most similar
+      .sort(() => 0.5 - Math.random()) // Shuffle those
       .slice(0, 3)
       .map(x => x.word);
 

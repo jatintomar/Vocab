@@ -124,77 +124,108 @@ export const ComprehensionView: React.FC<ComprehensionViewProps> = ({ data, them
     </motion.div>
   );
 
+  const [clozeStep, setClozeStep] = useState(0); // Add this state to track blank index within a passage
+
   const renderCloze = () => {
     const currentCloze = data.cloze[clozeIdx];
+    const currentBlank = currentCloze.blanks[clozeStep];
+    const blankAid = `cloze_${currentCloze.id}_${currentBlank.index}`;
+
     return (
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
           <div className="flex flex-col">
             <span className={accent.text}>Section 2: Cloze Test {clozeIdx + 1}/{data.cloze.length}</span>
-            <span className="opacity-40">{currentCloze.blanks.length} Blanks</span>
+            <span className="opacity-40">Blank {clozeStep + 1}/{currentCloze.blanks.length}</span>
           </div>
           <div className="flex gap-1 h-1 bg-white/5 rounded-full overflow-hidden w-24">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${((clozeIdx + 1) / data.cloze.length) * 100}%` }}
+              animate={{ width: `${((clozeStep + 1) / currentCloze.blanks.length) * 100}%` }}
               transition={{ duration: 0.5 }}
               className={`h-full ${accent.bg}`} 
             />
           </div>
         </div>
 
-        <div className={`p-8 rounded-[3rem] border ${theme.card} ${theme.border} shadow-2xl`}>
-          <p className="text-sm leading-[2.2] font-medium opacity-90 mb-8 whitespace-pre-wrap">
-            {currentCloze.passage}
-          </p>
+        <div className={`p-8 rounded-[3rem] border ${theme.card} ${theme.border} shadow-2xl space-y-8`}>
+          <div className="p-6 rounded-3xl bg-black/5 border border-white/5">
+             <p className="text-sm leading-[2.2] font-medium opacity-90 whitespace-pre-wrap">
+               {/* Highlight current blank in passage */}
+               {currentCloze.passage.split(new RegExp(`\\((${currentBlank.index})\\)`)).map((part, i) => {
+                 if (part === String(currentBlank.index)) {
+                   return <span key={i} className={`px-2 py-0.5 rounded mx-1 font-black ${accent.bg} text-white animate-pulse`}>({part})</span>;
+                 }
+                 return part;
+               })}
+             </p>
+          </div>
 
-          <div className="space-y-8">
-            {currentCloze.blanks.map((b, bidx) => (
-              <div key={b.index} className="space-y-3">
-                <p className="text-[10px] font-black opacity-30 flex items-center gap-2">
-                  <Clock size={10} /> BLANK ({b.index})
-                </p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                  {b.options.map(opt => {
-                    const aid = `cloze_${currentCloze.id}_${b.index}`;
-                    const isSelected = answers[aid] === opt;
-                    const isCorrect = opt === b.answer;
-                    
-                    return (
-                      <button
-                        key={opt}
-                        onClick={() => handleAnswer(aid, opt)}
-                        className={`py-2 px-3 rounded-xl border text-[11px] font-bold transition-all ${
-                          isSelected 
-                            ? (sessionMode === 'quiz' ? (isCorrect ? 'bg-emerald-500 border-emerald-400' : 'bg-rose-500 border-rose-400') : `${accent.bg} border-white/40`) 
-                            : `${theme.secondary} border-white/5 hover:bg-white/5`
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-                {sessionMode === 'quiz' && answers[`cloze_${currentCloze.id}_${b.index}`] && (
-                  <p className="text-[10px] opacity-60 italic pl-2 border-l border-white/20">{b.explanation}</p>
-                )}
-              </div>
-            ))}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+               <div className={`w-8 h-8 rounded-xl ${accent.bg} flex items-center justify-center text-white font-black text-xs`}>
+                  {currentBlank.index}
+               </div>
+               <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Select the most appropriate word for blank ({currentBlank.index})</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {currentBlank.options.map(opt => {
+                const isSelected = answers[blankAid] === opt;
+                const isCorrect = opt === currentBlank.answer;
+                
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => handleAnswer(blankAid, opt)}
+                    className={`text-left p-5 rounded-2xl border text-sm font-bold transition-all relative overflow-hidden group ${
+                      isSelected 
+                        ? (sessionMode === 'quiz' ? (isCorrect ? 'bg-emerald-500/20 border-emerald-500 text-emerald-500' : 'bg-rose-500/20 border-rose-500 text-rose-500') : `${accent.bg} border-white/40 text-white`) 
+                        : `${theme.secondary} border-white/5 hover:bg-white/5`
+                    }`}
+                  >
+                    {opt}
+                    {isSelected && sessionMode === 'quiz' && (
+                       <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          {isCorrect ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
+                       </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            
+            {sessionMode === 'quiz' && answers[blankAid] && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-2xl border ${theme.secondary} border-white/5`}>
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1 flex items-center gap-2">
+                    <Sparkles size={10} className={accent.text} /> logic insight
+                 </p>
+                 <p className="text-xs opacity-70 italic leading-relaxed">{currentBlank.explanation}</p>
+              </motion.div>
+            )}
           </div>
         </div>
 
         <button
           onClick={() => {
-            const allAnswered = currentCloze.blanks.every(b => answers[`cloze_${currentCloze.id}_${b.index}`]);
-            if (allAnswered) {
-              if (clozeIdx < data.cloze.length - 1) setClozeIdx(p => p + 1);
-              else setStep('rc');
-              window.scrollTo(0, 0);
+            if (clozeStep < currentCloze.blanks.length - 1) {
+              setClozeStep(p => p + 1);
+            } else {
+              if (clozeIdx < data.cloze.length - 1) {
+                setClozeIdx(p => p + 1);
+                setClozeStep(0);
+              } else {
+                setStep('rc');
+              }
             }
+            window.scrollTo(0, 0);
           }}
-          className={`w-full py-5 rounded-3xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${currentCloze.blanks.every(b => answers[`cloze_${currentCloze.id}_${b.index}`]) ? accent.bg : 'bg-white/10 opacity-30 cursor-not-allowed'}`}
+          disabled={!answers[blankAid]}
+          className={`w-full py-5 rounded-3xl font-black text-sm tracking-widest flex items-center justify-center gap-2 ${answers[blankAid] ? accent.bg : 'bg-white/10 opacity-30 cursor-not-allowed'} shadow-xl`}
         >
-          {clozeIdx < data.cloze.length - 1 ? 'NEXT CLOZE PASSAGE' : 'PROCEED TO READING PASSAGE'} <ChevronRight size={18} />
+          {clozeStep < currentCloze.blanks.length - 1 
+            ? 'NEXT BLANK' 
+            : (clozeIdx < data.cloze.length - 1 ? 'NEXT CLOZE PASSAGE' : 'PROCEED TO READING PASSAGE')} <ChevronRight size={18} />
         </button>
       </motion.div>
     );
