@@ -18,11 +18,14 @@ class VocabViewModel : ViewModel() {
     private val _currentQuizBatch = mutableStateOf<List<QuizItem>>(emptyList())
     val currentQuizBatch: State<List<QuizItem>> = _currentQuizBatch
 
-    private val _dailyPQRS = mutableStateOf(VocabRepository.dailyPQRS[0])
-    val dailyPQRS: State<PQRSQuestion> = _dailyPQRS
+    private val _dailyPQRS = mutableStateOf(VocabRepository.dailyPQRS)
+    val dailyPQRS: State<List<PQRSQuestion>> = _dailyPQRS
 
-    private val _dailyCloze = mutableStateOf(VocabRepository.dailyCloze[0])
-    val dailyCloze: State<ClozeQuestion> = _dailyCloze
+    private val _dailyCloze = mutableStateOf(VocabRepository.dailyCloze)
+    val dailyCloze: State<List<ClozeQuestion>> = _dailyCloze
+
+    private val _dailyRC = mutableStateOf(VocabRepository.dailyRC)
+    val dailyRC: State<com.jtvocab.quiz.model.RCQuestion> = _dailyRC
 
     private val _loadingAI = mutableStateOf(false)
     val loadingAI: State<Boolean> = _loadingAI

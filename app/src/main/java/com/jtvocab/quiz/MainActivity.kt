@@ -57,30 +57,47 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
         "Deepsea" -> Color(0xFF030712)
         "Evergreen" -> Color(0xFF064E3B)
         "Parchment" -> Color(0xFFFDFCF2)
-        "Nordic" -> Color(0xFF111827)
-        else -> Color(0xFF111827)
+        "Nordic" -> Color(0xFF030712)
+        else -> Color(0xFF030712)
     }
 
     val surfaceColor = when (state.theme) {
         "Deepsea" -> Color(0xFF111827)
         "Evergreen" -> Color(0xFF065F46)
         "Parchment" -> Color(0xFFF5F5DC)
-        "Nordic" -> Color(0xFF1F2937)
-        else -> Color(0xFF1F2937)
+        "Nordic" -> Color(0xFF111827)
+        else -> Color(0xFF111827)
     }
 
-    val onSurface = if (state.theme == "Parchment") Color(0xFF1C1917) else Color.White
-    val onBackground = if (state.theme == "Parchment") Color(0xFF1C1917) else Color.White
+    val isParchment = state.theme == "Parchment"
+    val onSurface = if (isParchment) Color(0xFF1C1917) else Color.White
+    val onBackground = if (isParchment) Color(0xFF1C1917) else Color.White
 
-    val colorScheme = darkColorScheme(
-        primary = accentColor,
-        background = backgroundColor,
-        surface = surfaceColor,
-        secondary = accentColor.copy(alpha = 0.7f),
-        onPrimary = if (state.theme == "Parchment") Color.White else Color.Black,
-        onBackground = onBackground,
-        onSurface = onSurface
-    )
+    val colorScheme = if (isParchment) {
+        lightColorScheme(
+            primary = accentColor,
+            background = backgroundColor,
+            surface = surfaceColor,
+            secondary = accentColor.copy(alpha = 0.7f),
+            onPrimary = Color.White,
+            onBackground = onBackground,
+            onSurface = onSurface,
+            surfaceVariant = surfaceColor.copy(alpha = 0.5f),
+            onSurfaceVariant = onSurface.copy(alpha = 0.7f)
+        )
+    } else {
+        darkColorScheme(
+            primary = accentColor,
+            background = backgroundColor,
+            surface = surfaceColor,
+            secondary = accentColor.copy(alpha = 0.7f),
+            onPrimary = Color.White,
+            onBackground = onBackground,
+            onSurface = onSurface,
+            surfaceVariant = surfaceColor.copy(alpha = 0.5f),
+            onSurfaceVariant = onSurface.copy(alpha = 0.7f)
+        )
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -179,7 +196,7 @@ fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onMenuClick) {
-            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
         }
         
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -188,7 +205,7 @@ fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
                 fontWeight = FontWeight.Black,
                 fontSize = 18.sp,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 "0%",
@@ -215,7 +232,7 @@ fun Header(streak: Int, achievementIcon: String) {
                 fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
                 letterSpacing = 2.sp,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 "SSC EXAM 2026",
@@ -238,8 +255,8 @@ fun Badge(icon: String) {
         modifier = Modifier
             .size(40.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color.White.copy(alpha = 0.05f))
-            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
         contentAlignment = Alignment.Center
     ) {
         Text(icon, fontSize = 20.sp)
@@ -250,7 +267,7 @@ fun Badge(icon: String) {
 fun StreakBadge(streak: Int) {
     Column(horizontalAlignment = Alignment.End) {
         Text("STREAK 🔥", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-        Text(streak.toString(), fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
+        Text(streak.toString(), fontSize = 18.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
@@ -278,12 +295,12 @@ fun DashboardContent(
                 fontWeight = FontWeight.Black,
                 fontSize = 20.sp,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                color = Color(0xFF60A5FA)
+                color = MaterialTheme.colorScheme.primary
             )
             Icon(
                 Icons.Default.Close, 
                 null, 
-                tint = Color.Gray, 
+                tint = MaterialTheme.colorScheme.onSurface.copy(0.5f), 
                 modifier = Modifier
                     .size(24.dp)
                     .clickable { onClose() }
@@ -312,7 +329,7 @@ fun DashboardContent(
 
         Spacer(Modifier.height(24.dp))
 
-        Text("VOCAB CATEGORIES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+        Text("VOCAB CATEGORIES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
         Spacer(Modifier.height(8.dp))
         
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -346,7 +363,7 @@ fun DashboardContent(
             title = "WEAK LIST",
             subtitle = "0 terms to revise",
             isSelected = false,
-            color = Color(0xFFF43F5E),
+            color = MaterialTheme.colorScheme.error,
             onClick = {}
         )
 
@@ -359,9 +376,9 @@ fun DashboardContent(
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Settings, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(16.dp))
-            Text("APP SETTINGS", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+            Text("APP SETTINGS", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), fontSize = 14.sp)
         }
     }
 }
@@ -384,11 +401,11 @@ fun DrawerItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, tint = if (isSelected) Color.White else Color.Gray, modifier = Modifier.size(24.dp))
+        Icon(icon, null, tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f), modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(16.dp))
         Column {
-            Text(title, fontWeight = FontWeight.Black, fontSize = 14.sp, color = if (isSelected) Color.White else Color.Gray)
-            Text(subtitle, fontSize = 10.sp, color = if (isSelected) Color.White.copy(0.7f) else Color.Gray.copy(0.7f))
+            Text(title, fontWeight = FontWeight.Black, fontSize = 14.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.8f))
+            Text(subtitle, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(0.7f) else MaterialTheme.colorScheme.onSurface.copy(0.4f))
         }
     }
 }
@@ -398,12 +415,12 @@ fun CatButton(label: String, isSelected: Boolean, modifier: Modifier = Modifier,
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) Color(0xFF3B82F6) else Color(0xFF1E293B))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
             .clickable { onClick() }
             .padding(vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) Color.White else Color.Gray)
+        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
     }
 }
 
@@ -422,7 +439,7 @@ fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) Color(0xFF3B82F6) else Color(0xFF1E293B))
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
                     .clickable { onSelect(index) }
                     .padding(horizontal = 24.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center
@@ -431,7 +448,7 @@ fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
                     "SET $setNum",
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
-                    color = if (isSelected) Color.White else Color.Gray
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
                 )
             }
         }
@@ -451,16 +468,16 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(32.dp)),
-            color = Color(0xFF111827)
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(Modifier.padding(24.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("SETTINGS", fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 24.sp, color = Color(0xFF3B82F6))
-                    IconButton(onClick = onClose) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                    Text("SETTINGS", fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 24.sp, color = MaterialTheme.colorScheme.primary)
+                    IconButton(onClick = onClose) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.5f)) }
                 }
 
                 Spacer(Modifier.height(24.dp))
-                Text("ACCENT COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                Text("ACCENT COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 Spacer(Modifier.height(16.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     val colors = listOf(0xFF3B82F6, 0xFF06B6D4, 0xFF10B981, 0xFFF43F5E, 0xFFF59E0B, 0xFF8B5CF6)
@@ -470,14 +487,14 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
                                 .size(32.dp)
                                 .clip(CircleShape)
                                 .background(Color(colorVal))
-                                .border(if (state.accentColor == colorVal) 4.dp else 0.dp, Color.White, CircleShape)
+                                .border(if (state.accentColor == colorVal) 4.dp else 0.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                                 .clickable { viewModel.setAccentColor(colorVal) }
                         )
                     }
                 }
 
                 Spacer(Modifier.height(32.dp))
-                Text("APPEARANCE THEMES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                Text("APPEARANCE THEMES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 Spacer(Modifier.height(16.dp))
                 
                 val themes = listOf("Deepsea", "Evergreen", "Parchment", "Nordic")
@@ -491,7 +508,7 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
                 }
 
                 Spacer(Modifier.height(32.dp))
-                Divider(color = Color.White.copy(0.05f))
+                Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
                 Spacer(Modifier.height(32.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -508,13 +525,13 @@ fun ThemeButton(name: String, isSelected: Boolean, modifier: Modifier = Modifier
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, if (isSelected) Color(0xFF3B82F6) else Color.White.copy(0.05f), RoundedCornerShape(16.dp))
-            .background(if (isSelected) Color(0xFF3B82F6).copy(0.1f) else Color.Transparent)
+            .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.1f), RoundedCornerShape(16.dp))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(0.1f) else Color.Transparent)
             .clickable { onClick() }
             .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(name.uppercase(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (isSelected) Color.White else Color.Gray)
+        Text(name.uppercase(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
     }
 }
 
@@ -523,13 +540,13 @@ fun SettingsActionButton(icon: ImageVector, label: String, modifier: Modifier = 
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
-            .background(Color.White.copy(0.03f))
+            .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.6f), modifier = Modifier.size(24.dp))
         Spacer(Modifier.height(8.dp))
-        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = Color.White)
+        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
     }
 }
 
@@ -549,7 +566,7 @@ fun ModeSelector(current: String, onSelect: (String) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) Color(0xFF3B82F6) else Color.Transparent)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onSelect(id) }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
@@ -558,7 +575,7 @@ fun ModeSelector(current: String, onSelect: (String) -> Unit) {
                     label,
                     fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
-                    color = if (isSelected) Color.White else Color.Gray
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
                 )
             }
         }
@@ -576,7 +593,7 @@ fun CategoryTabs(current: String, onSelect: (String) -> Unit) {
             TextButton(onClick = { onSelect(id) }) {
                 Text(
                     label,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.4f),
                     fontWeight = FontWeight.Black,
                     fontSize = 14.sp
                 )
@@ -591,7 +608,7 @@ fun QuizSection(viewModel: VocabViewModel) {
     
     if (quizItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Select a category to start", color = Color.Gray)
+            Text("Select a category to start", color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
         }
     }
 
@@ -646,18 +663,18 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
             .fillMaxWidth()
             .padding(bottom = 16.dp),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(0.dp),
-        border = BorderStroke(1.dp, Color.White.copy(0.05f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
     ) {
         Column(Modifier.padding(24.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Menu, null, tint = Color.Gray, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("#${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                    Text("#${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 }
-                Icon(Icons.Default.Info, null, tint = Color(0xFF3B82F6), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -666,7 +683,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 quiz.item.w,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF3B82F6),
+                color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 lineHeight = 36.sp
@@ -680,8 +697,8 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 val borderColor = when {
                     quiz.isAnswered && isCorrect -> Color(0xFF10B981)
                     isSelected && !isCorrect -> Color(0xFFEF4444)
-                    isSelected -> Color(0xFF3B82F6)
-                    else -> Color.White.copy(0.05f)
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface.copy(0.1f)
                 }
                 
                 Surface(
@@ -698,7 +715,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                         modifier = Modifier.padding(20.dp),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = if (quiz.isAnswered && isCorrect) Color(0xFF10B981) else Color.White
+                        color = if (quiz.isAnswered && isCorrect) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -709,44 +726,41 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
-                    .background(Color.White.copy(0.03f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("SESSION MASTERY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                        Text("0/50", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF3B82F6))
+                        Text("SESSION MASTERY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                        Text("0/50", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Spacer(Modifier.height(4.dp))
                     LinearProgressIndicator(
                         progress = 0f,
                         modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
-                        color = Color(0xFF3B82F6),
-                        trackColor = Color.White.copy(0.1f)
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(0.1f)
                     )
                 }
                 
                 Spacer(Modifier.width(24.dp))
-                
-                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = Color.White.copy(0.1f))
-                
+                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
                 Spacer(Modifier.width(24.dp))
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
-                    Text("0", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF3B82F6))
+                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text("0", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 }
             }
-            
+ 
             Spacer(Modifier.height(16.dp))
 
-            // AI Action Button (as seen in screenshot 1)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(16.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f), RoundedCornerShape(16.dp))
                     .clickable { 
                         if (insight != null) viewModel.clearInsight() 
                         else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
@@ -756,29 +770,29 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (loadingAI) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFF3B82F6))
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                 } else {
-                    Icon(Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White)
+                    Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-
+ 
             AnimatedVisibility(visible = insight != null) {
                 insight?.let { res ->
                     Column(
                         modifier = Modifier
                             .padding(top = 16.dp)
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.03f))
-                            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
                             .padding(16.dp)
                     ) {
-                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1))
-                        Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
-                        Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
-                        Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                        Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
+                        Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -792,7 +806,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
     
     if (quizItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Select a category to learn", color = Color.Gray)
+            Text("Select a category to learn", color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
         }
     }
 
@@ -818,8 +832,8 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
                         Text(quizItem.item.a.take(1).uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
-                        Text(quizItem.item.w, fontSize = 12.sp, color = Color.Gray, lineHeight = 16.sp)
+                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(quizItem.item.w, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 16.sp)
                         Spacer(Modifier.height(4.dp))
                         Text(quizItem.item.h, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
                     }
@@ -831,18 +845,64 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 
 @Composable
 fun CompSection(viewModel: VocabViewModel) {
-    val pqrs by viewModel.dailyPQRS
-    val cloze by viewModel.dailyCloze
+    val pqrsList by viewModel.dailyPQRS
+    val clozeList by viewModel.dailyCloze
+    val rc by viewModel.dailyRC
     
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Text("DAILY COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            Text("DAILY COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 8.dp))
         }
+        
         item {
+            Text("PARAJUMBLES (PQRS) - 5 ITEMS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+        }
+        items(pqrsList) { pqrs ->
             PQRSCard(pqrs)
         }
+        
         item {
+            Text("CLOZE TEST - 2 PASSAGES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+        }
+        items(clozeList) { cloze ->
             ClozeCard(cloze)
+        }
+
+        item {
+            Text("READING COMPREHENSION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+        }
+        item {
+            RCCard(rc)
+        }
+    }
+}
+
+@Composable
+fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text("READING COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+            Spacer(Modifier.height(12.dp))
+            Text(rc.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+            
+            Spacer(Modifier.height(24.dp))
+            rc.questions.forEachIndexed { i, q ->
+                Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.height(8.dp))
+            }
+            
+            Button(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text("Read Full & Solve", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -857,13 +917,14 @@ fun ClozeCard(cloze: ClozeQuestion) {
         Column(Modifier.padding(24.dp)) {
             Text("CLOZE TEST", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
             Spacer(Modifier.height(12.dp))
-            Text(cloze.passage, fontSize = 14.sp, lineHeight = 20.sp)
+            Text(cloze.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
             
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Solve Passage", fontWeight = FontWeight.Bold)
             }
@@ -881,17 +942,18 @@ fun PQRSCard(pqrs: PQRSQuestion) {
         Column(Modifier.padding(24.dp)) {
             Text("PQRS (PARAJUMBLES)", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
             Spacer(Modifier.height(12.dp))
-            pqrs.s1?.let { s1Text: String -> Text(text = s1Text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
-            pqrs.sentences.forEach { sentence: String ->
-                Text(text = sentence, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
+            pqrs.s1?.let { s1Text -> Text(text = s1Text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface) }
+            pqrs.sentences.forEach { sentence ->
+                Text(text = sentence, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.onSurface)
             }
-            pqrs.s6?.let { s6Text: String -> Text(text = s6Text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+            pqrs.s6?.let { s6Text -> Text(text = s6Text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface) }
             
             Spacer(Modifier.height(24.dp))
             Button(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Show Answer & Logic", fontWeight = FontWeight.Bold)
             }

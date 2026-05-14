@@ -23,7 +23,7 @@ data class AppState(
     val weakListOW: List<VocabItem> = emptyList(),
     val weakListSY: List<VocabItem> = emptyList(),
     val weakListID: List<VocabItem> = emptyList(),
-    val accentColor: Long = 0xFF6366F1, // Default indigo
+    val accentColor: Long = 0xFF3B82F6, // Standard blue
     val theme: String = "Nordic",
     val achievements: List<Achievement> = listOf(
         Achievement("early_bird", "Early Bird", "🌅"),
@@ -50,6 +50,19 @@ data class ClozeQuestion(
         val index: Int,
         val options: List<String>,
         val answer: String,
+        val explanation: String
+    )
+}
+
+data class RCQuestion(
+    val id: String,
+    val passage: String,
+    val questions: List<RCSubQuestion>
+) {
+    data class RCSubQuestion(
+        val q: String,
+        val options: List<String>,
+        val a: String,
         val explanation: String
     )
 }

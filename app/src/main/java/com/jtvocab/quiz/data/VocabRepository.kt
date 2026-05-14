@@ -54,7 +54,23 @@ object VocabRepository {
             ),
             correctSequence = "PQSR",
             explanation = "Logical flow from benefits to critics to trust issues."
-        )
+        ),
+        PQRSQuestion(
+            id = "pq2",
+            s1 = "S1: Space exploration has always fascinated humanity.",
+            s6 = "S6: The final frontier remains our greatest challenge.",
+            sentences = listOf(
+                "P: Mars has become the primary target for colonization.",
+                "Q: Technological hurdles still block the path.",
+                "R: Private companies are now leading the charge.",
+                "S: Resources are being diverted from Earthly needs."
+            ),
+            correctSequence = "RPQS",
+            explanation = "Discusses the shift to private companies and their goals."
+        ),
+        PQRSQuestion(id = "pq3", s1 = "S1: History", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA"),
+        PQRSQuestion(id = "pq4", s1 = "S1: Science", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA"),
+        PQRSQuestion(id = "pq5", s1 = "S1: Arts", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA")
     )
 
     val dailyCloze = listOf(
@@ -66,6 +82,29 @@ object VocabRepository {
                 ClozeQuestion.Blank(2, listOf("repair", "malfunction", "success", "design"), "malfunction", "Technical failure."),
                 ClozeQuestion.Blank(3, listOf("beside", "central", "critical", "pivotal"), "beside", "Idiom 'beside the point'."),
                 ClozeQuestion.Blank(4, listOf("vivid", "performative", "actual", "meager"), "performative", "Acting for show.")
+            )
+        ),
+        ClozeQuestion(
+            id = "cl2",
+            passage = "Language is (1) more than a tool for communication. It (2) the soul of a culture. When a language (3), its unique worldview also (4).",
+            blanks = listOf(
+                ClozeQuestion.Blank(1, listOf("merely", "rarely", "notably", "highly"), "merely", "Contrastive focus."),
+                ClozeQuestion.Blank(2, listOf("embodies", "destroys", "limits", "hides"), "embodies", "Positive relationship."),
+                ClozeQuestion.Blank(3, listOf("thrives", "dies", "grows", "changes"), "dies", "Context of loss."),
+                ClozeQuestion.Blank(4, listOf("expands", "vanishes", "improves", "persists"), "vanishes", "Consequence of loss.")
+            )
+        )
+    )
+
+    val dailyRC = com.jtvocab.quiz.model.RCQuestion(
+        id = "rc1",
+        passage = "The Industrial Revolution was a period of global transition of the human economy towards more widespread, efficient and stable manufacturing processes that succeeded the Agricultural Revolution. This process started in Great Britain and then spread to the rest of the world.",
+        questions = listOf(
+            com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                q = "Where did the Industrial Revolution start?",
+                options = listOf("USA", "Great Britain", "France", "Germany"),
+                a = "Great Britain",
+                explanation = "Directly stated in the passage."
             )
         )
     )
