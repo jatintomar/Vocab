@@ -1,33 +1,23 @@
 # Build Guide for JT VOCAB QUIZ (Mobile)
 
-To fix the GitHub errors and build your app natively, follow these steps:
+I have fixed the "Cannot mutate dependencies" and "processDebugResources" errors. To build your APK now:
 
-## 1. Export these files to GitHub
-The "No file matches" error on GitHub means you haven't pushed the Android source code yet.
+## 1. Export fixes to GitHub
+The most important step is to push these new files:
 1. Tap the **Sync/GitHub** menu in AI Studio.
-2. Select **Export to GitHub** or **Push**. This will upload the `app`, `build.gradle`, and `.github` folders I just created.
+2. Select **Export to GitHub** or **Push**.
+   - This sends the new `res` folder (required for build) and the fixed `.github/workflows/android.yml`.
 
-## 2. GitHub Actions (The Build)
-I have created a new file at `.github/workflows/android.yml`. This workflow:
-- Automatically installs Gradle (fixes the "gradlew" error).
-- Uses **JDK 17** (required for modern Android apps).
-- Generates an APK for you in the cloud.
+## 2. GitHub Actions (Automatic APK)
+Once you push, the "Android CI" will run automatically.
+- I fixed the command to use `./gradlew assembleDebug`.
+- I added a step to **Upload APK**. Once the build finishes, you will see a "Artifacts" section in the GitHub Actions run where you can download the `.apk`.
 
-**How to find your APK:**
-1. Open your GitHub repository in your browser.
-2. Tap the **Actions** tab.
-3. Tap on the latest **"Android CI"** run.
-4. Once finished, scroll down to **"Artifacts"** and tap the linked zip file to download your app.
+## 3. If it still fails
+The error was likely due to a version mismatch between Kotlin (`1.9.0`) and the Compose compiler (`1.5.1`). I have now aligned these.
+If you see a "gradlew not found" error, it means you didn't push the `gradlew` script and `gradle/` folder. Ensure all files are exported.
 
-## 3. Building in JStudio (Manual)
-If you prefer building inside the JStudio app:
-1. **Clone** your GitHub repository inside JStudio.
-2. JStudio will find the `build.gradle` file in the root.
-3. **Important:** Go to JStudio **Settings** and ensure the **JDK Version** is set to **17**.
-4. Tap the **Run** icon.
-
-### Technical Note
-I have updated your source code to be compatible with standard Android directory structures.
-- **Root**: `.github/`, `app/`, `build.gradle`, `settings.gradle`
-- **Main App**: `app/src/main/java/com/jtvocab/quiz/`
-- **Resources**: `app/src/main/AndroidManifest.xml`
+### Technical Fix Summary
+- **Resource Processing**: Created `app/src/main/res/values/` with string/color/theme definitions.
+- **Workflow**: Updated to use the Gradle wrapper script with `chmod +x` permissions.
+- **Versions**: Aligned Kotlin `1.9.0` with Compose Compiler `1.5.1`.
