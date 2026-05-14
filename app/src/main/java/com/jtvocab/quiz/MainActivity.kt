@@ -29,7 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.jtvocab.quiz.viewmodel.VocabViewModel
 import com.jtvocab.quiz.model.ClozeQuestion
 import com.jtvocab.quiz.model.PQRSQuestion
@@ -87,6 +89,7 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VocabApp(viewModel: VocabViewModel = viewModel()) {
     var mode by remember { mutableStateOf("quiz") } // quiz, learn, comp
@@ -125,6 +128,9 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     },
                     onSettingsOpen = {
                         showSettings = true
+                        scope.launch { drawerState.close() }
+                    },
+                    onClose = {
                         scope.launch { drawerState.close() }
                     }
                 )
@@ -254,7 +260,8 @@ fun DashboardContent(
     currentCat: String,
     onCatSelect: (String) -> Unit,
     onModeSelect: (String) -> Unit,
-    onSettingsOpen: () -> Unit
+    onSettingsOpen: () -> Unit,
+    onClose: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -273,7 +280,14 @@ fun DashboardContent(
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 color = Color(0xFF60A5FA)
             )
-            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+            Icon(
+                Icons.Default.Close, 
+                null, 
+                tint = Color.Gray, 
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onClose() }
+            )
         }
 
         Spacer(Modifier.height(40.dp))
@@ -424,6 +438,7 @@ fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
     val state by viewModel.state
