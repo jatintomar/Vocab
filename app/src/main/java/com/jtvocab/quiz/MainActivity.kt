@@ -491,7 +491,7 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
                 }
 
                 Spacer(Modifier.height(32.dp))
-                HorizontalDivider(color = Color.White.copy(0.05f))
+                Divider(color = Color.White.copy(0.05f))
                 Spacer(Modifier.height(32.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -729,7 +729,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 
                 Spacer(Modifier.width(24.dp))
                 
-                VerticalDivider(modifier = Modifier.height(24.dp), color = Color.White.copy(0.1f))
+                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = Color.White.copy(0.1f))
                 
                 Spacer(Modifier.width(24.dp))
 
@@ -776,7 +776,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     ) {
                         Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1))
                         Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
+                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
                         Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
                         Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
