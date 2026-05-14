@@ -20,7 +20,14 @@ export interface WordInsight {
   synonyms: string[];
 }
 
-export async function getWordInsight(word: string, category: string): Promise<WordInsight> {
+const insightCache: Record<string, WordInsight> = {};
+
+export async function getWordInsight(word: string, category: string, force: boolean = false): Promise<WordInsight> {
+  const cacheKey = `${category}:${word.toLowerCase()}`;
+  if (!force && insightCache[cacheKey]) {
+    return insightCache[cacheKey];
+  }
+
   const ai = getAI();
   const prompt = `
     Analyze the following English word: "${word}" (Category: ${category}).
@@ -51,7 +58,9 @@ export async function getWordInsight(word: string, category: string): Promise<Wo
       },
     });
 
-    return JSON.parse(response.text);
+    const result = JSON.parse(response.text);
+    insightCache[cacheKey] = result;
+    return result;
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {

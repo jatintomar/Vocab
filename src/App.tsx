@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2 } from 'lucide-react';
+import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw } from 'lucide-react';
 import { getWordInsight, WordInsight } from './services/geminiService';
 import { getDailyComprehension, DailyComprehensionData } from './services/comprehensionService';
 import { ComprehensionView } from './components/ComprehensionView';
@@ -246,9 +246,19 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
                   setLoadingAI(false);
                 }}
                 disabled={loadingAI}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 ${theme.secondary} hover:bg-white/5 transition-colors`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
               >
-                {loadingAI ? <BrainCircuit size={14} className="animate-pulse" /> : <Sparkles size={14} />}
+                {loadingAI && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center backdrop-blur-md z-10"
+                  >
+                    <BrainCircuit size={16} className="animate-pulse text-white mr-2" />
+                    <span className="text-[8px] text-white">AI THINKING...</span>
+                  </motion.div>
+                )}
+                <Sparkles size={14} className={insight ? 'text-amber-400' : ''} />
                 {insight ? 'Hide AI Insight' : 'AI powered Context'}
               </button>
             </div>
@@ -257,14 +267,27 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4`}
+                className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4 relative`}
               >
-                <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
                   <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${accent.text}`}>
                     <LayoutGrid size={10} /> SSC Exam Context 2026
                   </span>
-                  <p className="text-xs leading-relaxed opacity-70 italic">"{insight.context}"</p>
+                  <button 
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      setLoadingAI(true);
+                      const res = await getWordInsight(item.a, parentCat, true);
+                      setInsight(res);
+                      setLoadingAI(false);
+                    }}
+                    disabled={loadingAI}
+                    className="p-1 rounded-md hover:bg-white/10 transition-colors opacity-40 hover:opacity-100"
+                  >
+                    <RotateCw size={10} className={loadingAI ? 'animate-spin' : ''} />
+                  </button>
                 </div>
+                <p className="text-xs leading-relaxed opacity-70 italic">"{insight.context}"</p>
                 <div className="h-px bg-white/5" />
                 <div className="space-y-1">
                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
@@ -342,9 +365,19 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
             setLoadingAI(false);
           }}
           disabled={loadingAI}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/5 ${theme.secondary} hover:bg-white/5 transition-colors`}
+          className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/5 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
         >
-          {loadingAI ? <BrainCircuit size={14} className="animate-pulse" /> : <Sparkles size={14} />}
+          {loadingAI && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center backdrop-blur-md z-10"
+            >
+              <BrainCircuit size={16} className="animate-pulse text-white mr-2" />
+              <span className="text-[8px] text-white">GENERATING AI INSIGHT...</span>
+            </motion.div>
+          )}
+          <Sparkles size={14} className={insight ? 'text-amber-400' : ''} />
           {insight ? 'Hide AI Context' : 'AI Context & Mnemonic'}
         </button>
 
@@ -352,14 +385,27 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4`}
+            className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4 relative`}
           >
-            <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
               <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${accent.text}`}>
                 <LayoutGrid size={10} /> Exam Context 2026
               </span>
-              <p className="text-[11px] leading-relaxed opacity-70 italic">{insight.context}</p>
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setLoadingAI(true);
+                  const res = await getWordInsight(item.w, cat, true);
+                  setInsight(res);
+                  setLoadingAI(false);
+                }}
+                disabled={loadingAI}
+                className="p-1 rounded-md hover:bg-white/10 transition-colors opacity-40 hover:opacity-100"
+              >
+                <RotateCw size={10} className={loadingAI ? 'animate-spin' : ''} />
+              </button>
             </div>
+            <p className="text-[11px] leading-relaxed opacity-70 italic">{insight.context}</p>
             <div className="h-px bg-white/5" />
             <div className="space-y-1">
                 <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
@@ -782,6 +828,7 @@ export default function App() {
                 <button 
                   onClick={() => {
                     setIsChallengeMode(true);
+                    setMode('quiz');
                     setIsWeakRevision(false);
                     setIsSidebarOpen(false);
                     setShowResults(false);
@@ -964,33 +1011,34 @@ export default function App() {
             </span>
           </div>
         </div>
-        <div className="flex flex-col items-end">
-          <span className={`text-[9px] font-black uppercase tracking-widest ${accent.text}`}>Streak 🔥</span>
-          <span className="text-lg font-black leading-none">{streak}</span>
+        <div className="flex items-center gap-3">
+          <AnimatePresence mode="wait">
+            {ACHIEVEMENTS.filter(a => a.unlocked).slice(-1).map(ach => (
+              <motion.div
+                key={ach.id}
+                initial={{ x: 20, opacity: 0, scale: 0.8 }}
+                animate={{ x: 0, opacity: 1, scale: 1 }}
+                exit={{ x: -20, opacity: 0, scale: 0.8 }}
+                transition={{ type: 'spring', damping: 15 }}
+                className={`relative group`}
+              >
+                <div className={`flex items-center justify-center w-10 h-10 rounded-xl border bg-white/5 backdrop-blur-md shadow-lg ${accent.border}`}>
+                  <div className="scale-110 drop-shadow-md">{ach.icon}</div>
+                </div>
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                   <span className="text-[7px] font-black bg-black/80 px-1 rounded uppercase tracking-tighter">{ach.title}</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div className="flex flex-col items-end">
+            <span className={`text-[9px] font-black uppercase tracking-widest ${accent.text}`}>Streak 🔥</span>
+            <span className="text-lg font-black leading-none">{streak}</span>
+          </div>
         </div>
       </header>
 
-      {/* Real-time Achievement Notification */}
-      <div className="fixed top-24 left-0 right-0 z-50 flex flex-col items-center gap-3 pointer-events-none px-4">
-        <AnimatePresence>
-          {ACHIEVEMENTS.filter(a => a.unlocked).slice(-1).map(ach => (
-            <motion.div
-              key={ach.id}
-              initial={{ y: -50, opacity: 0, scale: 0.9 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              className={`pointer-events-auto flex items-center gap-4 px-6 py-4 rounded-[2.5rem] border shadow-2xl backdrop-blur-2xl ${theme.card} ${accent.border}`}
-            >
-              <div className="text-3xl drop-shadow-lg">{ach.icon}</div>
-              <div>
-                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${accent.text}`}>Achievement Unlocked</p>
-                <p className="text-sm font-black italic tracking-tighter">{ach.title}</p>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
+      {/* Achievement Rail (Keep it as a secondary view if needed, but primary badge is in header) */}
       <main className="w-full max-w-2xl px-4 pt-6 pb-40 mx-auto">
         <motion.div
           drag="x"
@@ -1073,7 +1121,7 @@ export default function App() {
           </div>
         )}
         {/* Mode Toggles */}
-        {!isWeakRevision && (
+        {!isWeakRevision && mode !== 'comp' && (
           <div className={`flex p-1 rounded-2xl mb-6 shadow-inner ${theme.secondary}`}>
             <button 
               onClick={() => { setMode('quiz'); setAnswered({}); setShowResults(false); }}
@@ -1091,7 +1139,7 @@ export default function App() {
         )}
 
         {/* Day Strategy */}
-        {isChallengeMode && (
+        {isChallengeMode && mode !== 'comp' && (
           <div className={`mb-6 p-5 rounded-[2.5rem] border ${theme.border} ${theme.secondary} shadow-xl shadow-black/10 backdrop-blur-md relative overflow-hidden`}>
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Zap size={64} />
