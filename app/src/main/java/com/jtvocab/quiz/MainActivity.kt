@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jtvocab.quiz.viewmodel.VocabViewModel
+import com.jtvocab.quiz.model.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -339,7 +340,7 @@ fun QuizCard(quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer:
                         Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
                         Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
                         
-                        Divider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
                         
                         Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
                         Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
