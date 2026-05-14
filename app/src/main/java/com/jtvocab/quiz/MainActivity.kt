@@ -498,6 +498,7 @@ fun DashboardContent(
         }
     }
 }
+}
 
 @Composable
 fun DrawerItem(
@@ -669,6 +670,7 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
             }
         }
     }
+}
 }
 
 @Composable
