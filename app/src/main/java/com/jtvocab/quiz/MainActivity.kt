@@ -612,46 +612,18 @@ fun QuizSection(viewModel: VocabViewModel) {
         }
     }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item {
-            ChallengeCard()
-        }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 32.dp)
+    ) {
         itemsIndexed(quizItems) { index, quiz ->
             QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
 }
 
-@Composable
-fun ChallengeCard() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp)
-            .clip(RoundedCornerShape(32.dp))
-            .background(
-                Brush.horizontalGradient(
-                    listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
-                )
-            )
-            .padding(24.dp)
-    ) {
-        Column {
-            Text("75 DAY CHALLENGE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White.copy(0.7f))
-            Text("DAY 14: THE ASCENT", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
-            Spacer(modifier = Modifier.height(16.dp))
-            LinearProgressIndicator(
-                progress = 0.25f,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape),
-                color = Color.White,
-                trackColor = Color.White.copy(0.2f)
-            )
-        }
-    }
-}
+// ChallengeCard removed as requested
 
 @Composable
 fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
@@ -845,63 +817,176 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 
 @Composable
 fun CompSection(viewModel: VocabViewModel) {
+    val compType by viewModel.currentCompType
     val pqrsList by viewModel.dailyPQRS
     val clozeList by viewModel.dailyCloze
     val rc by viewModel.dailyRC
     
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item {
-            Text("DAILY COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 8.dp))
-        }
-        
-        item {
-            Text("PARAJUMBLES (PQRS) - 5 ITEMS", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-        }
-        items(pqrsList) { pqrs ->
-            PQRSCard(pqrs)
-        }
-        
-        item {
-            Text("CLOZE TEST - 2 PASSAGES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-        }
-        items(clozeList) { cloze ->
-            ClozeCard(cloze)
+    val pqrsIndex by viewModel.currentPQRSIndex
+    val clozeIndex by viewModel.currentClozeIndex
+    
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Navigation Bar for Comp types
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("PQRS", "CLOZE", "RC").forEach { type ->
+                val isSelected = compType == type
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                        .clickable { viewModel.setCompType(type) }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(type, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
+                }
+            }
         }
 
-        item {
-            Text("READING COMPREHENSION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+        Spacer(Modifier.height(16.dp))
+
+        Box(modifier = Modifier.weight(1f)) {
+            when (compType) {
+                "PQRS" -> {
+                    val currentPQRS = pqrsList[pqrsIndex]
+                    PQRSSingleView(
+                        pqrs = currentPQRS,
+                        index = pqrsIndex,
+                        total = pqrsList.size,
+                        onPrev = { viewModel.prevPQRS() },
+                        onNext = { viewModel.nextPQRS() }
+                    )
+                }
+                "CLOZE" -> {
+                    val currentCloze = clozeList[clozeIndex]
+                    ClozeSingleView(
+                        cloze = currentCloze,
+                        index = clozeIndex,
+                        total = clozeList.size,
+                        onPrev = { viewModel.prevCloze() },
+                        onNext = { viewModel.nextCloze() }
+                    )
+                }
+                "RC" -> {
+                    RCCard(rc)
+                }
+            }
         }
-        item {
-            RCCard(rc)
+    }
+}
+
+@Composable
+fun PQRSSingleView(pqrs: PQRSQuestion, index: Int, total: Int, onPrev: () -> Unit, onNext: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("PQRS JUMBLE ${index + 1}/$total", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            LinearProgressIndicator(
+                progress = (index + 1).toFloat() / total,
+                modifier = Modifier.width(100.dp).height(4.dp).clip(CircleShape),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+            )
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.weight(1f)) {
+            item {
+                PQRSCard(pqrs)
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = onPrev,
+                enabled = index > 0,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("PREVIOUS", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+            }
+            Button(
+                onClick = onNext,
+                enabled = index < total - 1,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("NEXT", fontWeight = FontWeight.Black)
+            }
+        }
+    }
+}
+
+@Composable
+fun ClozeSingleView(cloze: ClozeQuestion, index: Int, total: Int, onPrev: () -> Unit, onNext: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
+        Text("CLOZE PASSAGE ${index + 1}/$total", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(24.dp))
+        
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.weight(1f)) {
+            item {
+                ClozeCard(cloze)
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = onPrev, enabled = index > 0, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp)) {
+                Text("PREV", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+            }
+            Button(onClick = onNext, enabled = index < total - 1, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary), shape = RoundedCornerShape(16.dp)) {
+                Text("NEXT", fontWeight = FontWeight.Black)
+            }
         }
     }
 }
 
 @Composable
 fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Text("READING COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-            Spacer(Modifier.height(12.dp))
-            Text(rc.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
-            
-            Spacer(Modifier.height(24.dp))
-            rc.questions.forEachIndexed { i, q ->
-                Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                Spacer(Modifier.height(8.dp))
-            }
-            
-            Button(
-                onClick = {},
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item {
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                shape = RoundedCornerShape(32.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Text("Read Full & Solve", fontWeight = FontWeight.Bold)
+                Column(Modifier.padding(24.dp)) {
+                    Text("READING COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+                    Spacer(Modifier.height(12.dp))
+                    Text(rc.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                    
+                    Spacer(Modifier.height(24.dp))
+                    rc.questions.forEachIndexed { i, q ->
+                        Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.height(12.dp))
+                        q.options.forEach { option ->
+                            Surface(
+                                onClick = {},
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f)),
+                                color = Color.Transparent
+                            ) {
+                                Text(option, modifier = Modifier.padding(16.dp), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    
+                    Button(
+                        onClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("FINISH RC", fontWeight = FontWeight.Black)
+                    }
+                }
             }
         }
     }
@@ -911,22 +996,39 @@ fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
 fun ClozeCard(cloze: ClozeQuestion) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
     ) {
-        Column(Modifier.padding(24.dp)) {
-            Text("CLOZE TEST", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-            Spacer(Modifier.height(12.dp))
-            Text(cloze.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+        Column(Modifier.padding(20.dp)) {
+            Text(cloze.passage, fontSize = 15.sp, lineHeight = 24.sp, color = MaterialTheme.colorScheme.onSurface)
             
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Solve Passage", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(32.dp))
+            
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                cloze.blanks.take(1).forEach { blank ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(blank.id.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text("SELECT THE MOST APPROPRIATE WORD FOR BLANK (${blank.id})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+                    }
+                    
+                    blank.options.forEach { option ->
+                        Surface(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                        ) {
+                            Text(option, modifier = Modifier.padding(20.dp), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
             }
         }
     }
@@ -934,28 +1036,75 @@ fun ClozeCard(cloze: ClozeQuestion) {
 
 @Composable
 fun PQRSCard(pqrs: PQRSQuestion) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Text("PQRS (PARAJUMBLES)", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-            Spacer(Modifier.height(12.dp))
-            pqrs.s1?.let { s1Text -> Text(text = s1Text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface) }
-            pqrs.sentences.forEach { sentence ->
-                Text(text = sentence, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.onSurface)
-            }
-            pqrs.s6?.let { s6Text -> Text(text = s6Text, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface) }
-            
-            Spacer(Modifier.height(24.dp))
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // S1 Label
+        pqrs.s1?.let { s1Text ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(0.3f))
+                    .padding(16.dp)
             ) {
-                Text("Show Answer & Logic", fontWeight = FontWeight.Bold)
+                Column {
+                    Text("FIXED START (S1)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Spacer(Modifier.height(4.dp))
+                    Text(s1Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+
+        // P, Q, R, S Items
+        pqrs.sentences.forEachIndexed { i, sentence ->
+            val label = when(i) { 0 -> "P"; 1 -> "Q"; 2 -> "R"; else -> "S" }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(label, color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                }
+                Spacer(Modifier.width(16.dp))
+                Text(sentence.removePrefix("$label: "), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface, lineHeight = 22.sp)
+            }
+        }
+
+        // S6 Label
+        pqrs.s6?.let { s6Text ->
+             Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(0.3f))
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text("FIXED END (S6)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Spacer(Modifier.height(4.dp))
+                    Text(s6Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+        
+        // Answer Chips at bottom
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("PQRS", "PSQR").forEach { seq ->
+                Surface(
+                    onClick = {},
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                ) {
+                    Text(seq, modifier = Modifier.padding(16.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                }
             }
         }
     }

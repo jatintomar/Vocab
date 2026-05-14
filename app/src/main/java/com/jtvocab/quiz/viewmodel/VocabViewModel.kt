@@ -27,6 +27,22 @@ class VocabViewModel : ViewModel() {
     private val _dailyRC = mutableStateOf(VocabRepository.dailyRC)
     val dailyRC: State<com.jtvocab.quiz.model.RCQuestion> = _dailyRC
 
+    // Tracking current task in comprehension
+    private val _currentCompType = mutableStateOf("PQRS") // PQRS, CLOZE, RC
+    val currentCompType: State<String> = _currentCompType
+
+    private val _currentPQRSIndex = mutableStateOf(0)
+    val currentPQRSIndex: State<Int> = _currentPQRSIndex
+
+    private val _currentClozeIndex = mutableStateOf(0)
+    val currentClozeIndex: State<Int> = _currentClozeIndex
+
+    fun setCompType(type: String) { _currentCompType.value = type }
+    fun nextPQRS() { if (_currentPQRSIndex.value < dailyPQRS.value.size - 1) _currentPQRSIndex.value++ }
+    fun prevPQRS() { if (_currentPQRSIndex.value > 0) _currentPQRSIndex.value-- }
+    fun nextCloze() { if (_currentClozeIndex.value < dailyCloze.value.size - 1) _currentClozeIndex.value++ }
+    fun prevCloze() { if (_currentClozeIndex.value > 0) _currentClozeIndex.value-- }
+
     private val _loadingAI = mutableStateOf(false)
     val loadingAI: State<Boolean> = _loadingAI
 
