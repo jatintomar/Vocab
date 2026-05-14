@@ -346,12 +346,12 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
   const [loadingAI, setLoadingAI] = useState(false);
 
   return (
-    <div key={item.id} className={`p-6 rounded-[2rem] border transition-all shadow-sm ${theme.card} ${theme.border}`}>
-      <div className="flex justify-between items-start mb-2">
-        <h4 className={`text-xl font-bold font-serif ${accent.text}`}>{item.w}</h4>
+    <div key={item.id} className={`p-4 rounded-[1.5rem] border transition-all shadow-sm ${theme.card} ${theme.border}`}>
+      <div className="flex justify-between items-start mb-1">
+        <h4 className={`text-lg font-bold font-serif ${accent.text}`}>{item.w}</h4>
         <span className="text-[10px] font-black opacity-30 italic">#{globalSerial}</span>
       </div>
-      <p className={`font-medium leading-relaxed opacity-80 mb-6`}>{item.a}</p>
+      <p className={`text-sm font-medium leading-relaxed opacity-80 mb-4`}>{item.a}</p>
       
       <div className="flex flex-col gap-3">
         <button 
@@ -363,7 +363,7 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
             setLoadingAI(false);
           }}
           disabled={loadingAI}
-          className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/5 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
+          className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/5 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
         >
           {loadingAI && (
             <motion.div 
@@ -383,7 +383,7 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4 relative`}
+            className={`p-4 rounded-2xl ${theme.secondary} border border-white/5 space-y-3 relative`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${accent.text}`}>
@@ -403,28 +403,28 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
                 <RotateCw size={10} className={loadingAI ? 'animate-spin' : ''} />
               </button>
             </div>
-            <p className="text-[11px] leading-relaxed opacity-70 italic">{insight.context}</p>
+            <p className="text-[10px] leading-relaxed opacity-70 italic">{insight.context}</p>
             <div className="h-px bg-white/5" />
             <div className="space-y-1">
                 <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
                 <MessageSquareQuote size={10} /> Usage example
               </span>
-              <p className="text-[10px] opacity-80 font-medium italic">"{insight.usage}"</p>
+              <p className="text-[9px] opacity-80 font-medium italic">"{insight.usage}"</p>
             </div>
             <div className="h-px bg-white/5" />
             <div className="space-y-1">
               <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-amber-500`}>
                 <BrainCircuit size={10} /> Mnemonic Device
               </span>
-              <p className="text-xs font-bold tracking-tight">{insight.mnemonic}</p>
+              <p className="text-[10px] font-bold tracking-tight">{insight.mnemonic}</p>
             </div>
           </motion.div>
         )}
       </div>
 
-      <div className={`mt-4 pt-4 border-t ${theme.border} opacity-40 flex justify-between items-center text-sm`}>
+      <div className={`mt-3 pt-3 border-t ${theme.border} opacity-40 flex justify-between items-center text-xs`}>
         <p className={`font-bold uppercase tracking-widest flex items-center gap-2 ${accent.text}`}>
-          <Star size={14} /> {item.h}
+          <Star size={12} /> {item.h}
         </p>
       </div>
     </div>

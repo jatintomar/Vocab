@@ -185,30 +185,30 @@ class VocabViewModel : ViewModel() {
         }
     }
 
-    fun finishSession() {
+    fun markSetAsLearned() {
         val currentBatch = _currentQuizBatch.value
         if (currentBatch.isEmpty()) return
         
-        val correctCount = currentBatch.count { it.selectedOption == it.item.a }
-        val totalCount = currentBatch.size
-        val successThreshold = totalCount * 0.8
-        
-        if (correctCount >= successThreshold) {
-            if (_isChallengeMode.value) {
-                _state.value = _state.value.copy(
-                    completedChallengeDays = _state.value.completedChallengeDays + _challengeDay.value
-                )
-            } else if (_currentSetIndex.value >= 0) {
-                val cat = currentBatch.firstOrNull()?.item?.cat ?: ""
-                _state.value = when(cat) {
-                    "ow" -> _state.value.copy(completedOWS = _state.value.completedOWS + _currentSetIndex.value)
-                    "sy" -> _state.value.copy(completedSY = _state.value.completedSY + _currentSetIndex.value)
-                    "id" -> _state.value.copy(completedID = _state.value.completedID + _currentSetIndex.value)
-                    "ph" -> _state.value.copy(completedPH = _state.value.completedPH + _currentSetIndex.value)
-                    else -> _state.value
-                }
+        if (_isChallengeMode.value) {
+            _state.value = _state.value.copy(
+                completedChallengeDays = _state.value.completedChallengeDays + _challengeDay.value
+            )
+        } else if (_currentSetIndex.value >= 0) {
+            val cat = currentBatch.firstOrNull()?.item?.cat ?: ""
+            _state.value = when(cat) {
+                "ow" -> _state.value.copy(completedOWS = _state.value.completedOWS + _currentSetIndex.value)
+                "sy" -> _state.value.copy(completedSY = _state.value.completedSY + _currentSetIndex.value)
+                "id" -> _state.value.copy(completedID = _state.value.completedID + _currentSetIndex.value)
+                "ph" -> _state.value.copy(completedPH = _state.value.completedPH + _currentSetIndex.value)
+                else -> _state.value
             }
         }
+    }
+
+    fun finishSession() {
+        markSetAsLearned()
+        // Reset or navigate back
+        _currentQuizBatch.value = emptyList()
     }
 
     private fun addToWeakList(item: VocabItem) {

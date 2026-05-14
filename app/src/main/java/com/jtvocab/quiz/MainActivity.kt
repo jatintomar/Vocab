@@ -759,12 +759,12 @@ fun QuizSection(viewModel: VocabViewModel) {
             if (quizItems.isNotEmpty()) {
                 item {
                     Button(
-                        onClick = { viewModel.setChallengeMode(false) },
-                        modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 8.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        onClick = { viewModel.finishSession() },
+                        modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("FINISH SESSION", fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        Text("FINISH SESSION", fontWeight = FontWeight.Black, fontSize = 14.sp)
                     }
                 }
             }
@@ -959,7 +959,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
         if (quizItems.isNotEmpty()) {
             item {
                 Button(
-                    onClick = { viewModel.setChallengeMode(false) },
+                    onClick = { viewModel.finishSession() },
                     modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 8.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -986,11 +986,11 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
     ) {
-        Column(Modifier.padding(20.dp)) {
+        Column(Modifier.padding(14.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     (if (item.cat == "id") item.w else item.a) ?: "",
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
@@ -1003,16 +1003,16 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
                 )
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             
             Text(
                 (if (item.cat == "id") item.a else item.w) ?: "",
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
-                lineHeight = 20.sp
+                lineHeight = 18.sp
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
 
             // AI Button
             Surface(
@@ -1025,20 +1025,20 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(0.03f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.08f))
+                color = MaterialTheme.colorScheme.onSurface.copy(0.02f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.06f))
             ) {
                 Row(
-                    modifier = Modifier.padding(vertical = 12.dp),
+                    modifier = Modifier.padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (loadingAI && isShowingThisInsight) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = MaterialTheme.colorScheme.primary)
                     } else {
-                        Icon(Icons.Default.Star, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+                        Icon(Icons.Default.Star, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(6.dp))
+                        Text("AI CONTEXT & MNEMONIC", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
                     }
                 }
             }
@@ -1049,31 +1049,31 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(0.05f))
-                            .padding(12.dp)
+                            .padding(top = 10.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(0.04f))
+                            .padding(10.dp)
                     ) {
                         Text("MNEMONIC", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text(ins.mnemonic, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
-                        Spacer(Modifier.height(8.dp))
+                        Text(ins.mnemonic, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                        Spacer(Modifier.height(6.dp))
                         Text("EXAM CONTEXT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text(ins.context, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                        Text(ins.context, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
             Spacer(Modifier.height(12.dp))
+            Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
+            Spacer(Modifier.height(10.dp))
 
             // Hindi Meaning Section
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.FavoriteBorder, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary.copy(0.5f))
+                Icon(Icons.Default.FavoriteBorder, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary.copy(0.5f))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     item.h,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary.copy(0.8f)
                 )
