@@ -140,13 +140,21 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     state = state,
                     currentCat = cat,
                     currentMode = mode,
+                    isChallengeMode = viewModel.isChallengeMode.value,
                     onCatSelect = { 
                         cat = it
+                        viewModel.setChallengeMode(false)
                         viewModel.startQuiz(it, 0)
                         scope.launch { drawerState.close() }
                     },
                     onModeSelect = {
                         mode = it
+                        viewModel.setChallengeMode(false)
+                        scope.launch { drawerState.close() }
+                    },
+                    onChallengeClick = {
+                        mode = "quiz"
+                        viewModel.setChallengeMode(true)
                         scope.launch { drawerState.close() }
                     },
                     onSettingsOpen = {
@@ -161,23 +169,28 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
         },
         gesturesEnabled = true
     ) {
+        val isChallenge = viewModel.isChallengeMode.value
         Scaffold(
             topBar = {
                 CustomTopBar(
                     streak = state.streak,
-                    title = "JT VOCAB QUIZ",
+                    title = if (isChallenge) "75 DAY CHALLENGE" else if (mode == "comp") "DAILY COMPREHENSION" else "JT VOCAB QUIZ",
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                ModeSelector(mode) { mode = it }
-                
-                if (mode != "comp") {
-                    SetSelector(currentCat = cat, currentSet = viewModel.currentSetIndex.value) { setIndex ->
-                        viewModel.startQuiz(cat, setIndex)
+                if (!isChallenge) {
+                    ModeSelector(mode) { mode = it; viewModel.setChallengeMode(false) }
+                    
+                    if (mode != "comp") {
+                        SetSelector(currentCat = cat, currentSet = viewModel.currentSetIndex.value) { setIndex ->
+                            viewModel.startQuiz(cat, setIndex)
+                        }
                     }
+                } else {
+                    ChallengeStrategyCard(viewModel)
                 }
                 
                 Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -193,79 +206,37 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
 }
 
 @Composable
-fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+fun ChallengeStrategyCard(viewModel: VocabViewModel) {
+    val day by viewModel.challengeDay
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.1f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.2f))
     ) {
-        IconButton(onClick = onMenuClick) {
-            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
+        Column(Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("DAY $day STRATEGY", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, letterSpacing = 2.sp)
+                Text("Plan 2026", fontWeight = FontWeight.Bold, fontSize = 10.sp, opacity = 0.5f)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text("Goal: Master 82 terms (OWS: 27, SY: 24, ID: 24, PH: 7)", fontSize = 14.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(1, 2, 3, 4, 5).forEach { d ->
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(if (day == d) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                            .clickable { viewModel.setChallengeDay(d) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(d.toString(), fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
         }
-        
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                title,
-                fontWeight = FontWeight.Black,
-                fontSize = 18.sp,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                "0%",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        
-        StreakBadge(streak)
-    }
-}
-
-@Composable
-fun Header(streak: Int, achievementIcon: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                "JT VOCAB",
-                fontWeight = FontWeight.Black,
-                fontSize = 20.sp,
-                letterSpacing = 2.sp,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                "SSC EXAM 2026",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Badge(achievementIcon)
-            StreakBadge(streak)
-        }
-    }
-}
-
-@Composable
-fun Badge(icon: String) {
-    Box(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(icon, fontSize = 20.sp)
     }
 }
 
@@ -282,8 +253,10 @@ fun DashboardContent(
     state: AppState,
     currentCat: String,
     currentMode: String,
+    isChallengeMode: Boolean,
     onCatSelect: (String) -> Unit,
     onModeSelect: (String) -> Unit,
+    onChallengeClick: () -> Unit,
     onSettingsOpen: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -327,10 +300,20 @@ fun DashboardContent(
         Spacer(Modifier.height(16.dp))
 
         DrawerItem(
+            icon = Icons.Default.Star,
+            title = "75 DAY CHALLENGE",
+            subtitle = "Mastery Plan 2026",
+            isSelected = isChallengeMode,
+            onClick = { onChallengeClick() }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        DrawerItem(
             icon = Icons.Default.Menu,
             title = "VOCAB PRACTICE",
-            subtitle = "OW / Set 1",
-            isSelected = currentMode == "quiz",
+            subtitle = "Standard Sets",
+            isSelected = currentMode == "quiz" && !isChallengeMode,
             onClick = { onModeSelect("quiz") }
         )
 
@@ -631,7 +614,7 @@ fun QuizSection(viewModel: VocabViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        itemsIndexed(quizItems, key = { _, q -> q.item.id + q.isCorrect }) { index, quiz ->
+        itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
             QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
@@ -866,6 +849,33 @@ fun CompSection(viewModel: VocabViewModel) {
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            // Daily Pulse Card
+            val pulse by viewModel.dailyPulse
+            if (pulse != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.1f))
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("DAILY VOCABULARY PULSE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(pulse!!.optString("word", ""), fontWeight = FontWeight.Black, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.height(4.dp))
+                        Text(pulse!!.optString("insight", ""), fontSize = 12.sp, opacity = 0.7f, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        Spacer(Modifier.height(8.dp))
+                        Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface.copy(0.5f), RoundedCornerShape(12.dp)).padding(12.dp)) {
+                            Text(pulse!!.optString("usage", ""), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
             }
 
             // Navigation Bar for Comp types
@@ -1112,8 +1122,8 @@ fun ClozeCard(cloze: ClozeQuestion) {
                         
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            mainAxisSpacing = 8.dp,
-                            crossAxisSpacing = 8.dp
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             blank.options.forEach { option ->
                                 var isSelected by remember { mutableStateOf(false) }
@@ -1215,9 +1225,9 @@ fun PQRSCard(pqrs: PQRSQuestion) {
         
         Text("CHOOSE CORRECT SEQUENCE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.padding(start = 8.dp))
         
-        // Answer Chips at bottom
+        // Options
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val options = listOf(pqrs.correctSequence, "PSQR", "RQPS", "QPSR").distinct().take(3)
+            val options = listOf(pqrs.correctSequence, "PSQR", "RQPS", "QPSR").shuffled().distinct().take(3)
             options.forEach { seq ->
                 var isSelected by remember { mutableStateOf(false) }
                 Surface(
@@ -1236,6 +1246,37 @@ fun PQRSCard(pqrs: PQRSQuestion) {
                         fontSize = 13.sp
                     )
                 }
+            }
+        }
+
+        if (pqrs.logicalConnectors.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Text("LOGICS TO SPOT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pqrs.logicalConnectors.forEach { connector ->
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.secondary.copy(0.1f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(connector, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(0.02f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text("STRATEGIC EXPLANATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(8.dp))
+                Text(pqrs.explanation, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.7f), lineHeight = 20.sp)
             }
         }
     }

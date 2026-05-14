@@ -69,6 +69,19 @@ class VocabViewModel : ViewModel() {
     private val _currentInsight = mutableStateOf<com.jtvocab.quiz.data.WordInsight?>(null)
     val currentInsight: State<com.jtvocab.quiz.data.WordInsight?> = _currentInsight
 
+    private val _dailyPulse = mutableStateOf<org.json.JSONObject?>(null)
+    val dailyPulse: State<org.json.JSONObject?> = _dailyPulse
+
+    init {
+        fetchDailyPulse()
+    }
+
+    private fun fetchDailyPulse() {
+        viewModelScope.launch {
+            _dailyPulse.value = com.jtvocab.quiz.data.AndroidGeminiService.getDailyInsight()
+        }
+    }
+
     fun fetchInsight(word: String, category: String) {
         viewModelScope.launch {
             _loadingAI.value = true
@@ -97,6 +110,59 @@ class VocabViewModel : ViewModel() {
 
     fun setTheme(theme: String) {
         _state.value = _state.value.copy(theme = theme)
+    }
+
+    private val _isChallengeMode = mutableStateOf(false)
+    val isChallengeMode: State<Boolean> = _isChallengeMode
+
+    private val _challengeDay = mutableStateOf(1)
+    val challengeDay: State<Int> = _challengeDay
+
+    fun setChallengeMode(enabled: Boolean) {
+        _isChallengeMode.value = enabled
+        if (enabled) {
+            startChallengeQuiz(_challengeDay.value)
+        }
+    }
+
+    fun setChallengeDay(day: Int) {
+        _challengeDay.value = day
+        if (_isChallengeMode.value) {
+            startChallengeQuiz(day)
+        }
+    }
+
+    private fun startChallengeQuiz(day: Int) {
+        val quotas = mapOf("ow" to 27, "sy" to 24, "id" to 24, "ph" to 7)
+        val combinedItems = mutableListOf<VocabItem>()
+        
+        quotas.forEach { (cat, perDay) ->
+            val list = when(cat) {
+                "ow" -> VocabRepository.ows
+                "sy" -> VocabRepository.synonyms
+                "id" -> VocabRepository.idioms
+                "ph" -> VocabRepository.phrasal
+                else -> emptyList()
+            }
+            val start = (day - 1) * perDay
+            val end = minOf(start + perDay, list.size)
+            if (start < list.size) {
+                combinedItems.addAll(list.subList(start, end))
+            }
+        }
+
+        _currentQuizBatch.value = combinedItems.map { item ->
+            val allAnswers = when(item.cat) {
+                "ow" -> VocabRepository.ows
+                "sy" -> VocabRepository.synonyms
+                "ph" -> VocabRepository.phrasal
+                else -> VocabRepository.idioms
+            }.map { it.a }
+            
+            val distractors = allAnswers.filter { it != item.a }.shuffled().take(3)
+            val options = (distractors + item.a).shuffled()
+            QuizItem(item, options)
+        }
     }
 
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {

@@ -149,13 +149,39 @@ object VocabRepository {
 
     val dailyRC = com.jtvocab.quiz.model.RCQuestion(
         id = "rc1",
-        passage = "The Industrial Revolution was a period of global transition of the human economy towards more widespread, efficient and stable manufacturing processes that succeeded the Agricultural Revolution. This process started in Great Britain and then spread to the rest of the world.",
+        passage = """
+            The Great Acceleration is a term used to describe the most rapid period of human impact on the Earth's geology and ecosystems. This period, beginning around the mid-20th century, is characterized by a dramatic increase in human activity across various sectors including economics, population, and resource consumption. The primary driver behind this phenomenon was the post-World War II period of reconstruction and industrialization. Global GDP grew at unprecedented rates, and technological advancements in medicine and agriculture led to a population explosion. However, this growth came at a significant ecological cost. The levels of atmospheric carbon dioxide, methane, and nitrous oxide began to climb steeply, far exceeding pre-industrial levels. Ocean acidification and biodiversity loss have also accelerated, threatening the stability of the biosphere. While the benefits of the Great Acceleration are evident in improved living standards for many, the long-term sustainability of this model is now under intense scrutiny. Scientists argue that we have entered the Anthropocene, a new epoch defined by human dominance over the planet's systems. Mitigating the impacts requires a fundamental shift in how societies produce and consume energy.
+        """.trimIndent(),
         questions = listOf(
             com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
-                q = "Where did the Industrial Revolution start?",
-                options = listOf("USA", "Great Britain", "France", "Germany"),
-                a = "Great Britain",
-                explanation = "Directly stated in the passage."
+                q = "Which of the following would be an appropriate title for the passage?",
+                options = listOf("The Rise of GDP", "The Great Acceleration and Anthropocene", "Post-War Industrialization", "The Stability of Biosphere"),
+                a = "The Great Acceleration and Anthropocene",
+                explanation = "The passage discusses the rapid human impact period and its result, the Anthropocene."
+            ),
+            com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                q = "What can be inferred about the pre-industrial levels of greenhouse gases?",
+                options = listOf("They were higher than current levels", "They were significantly lower and stable", "They were fluctuating wildly", "They were identical to current levels"),
+                a = "They were significantly lower and stable",
+                explanation = "The passage says current levels 'far exceed pre-industrial levels', implying they were notably lower."
+            ),
+            com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                q = "According to the passage, what triggered the population movement?",
+                options = listOf("Climate change", "The Great Depression", "Technological advancements in medicine/agri", "A shift to the Anthropocene"),
+                a = "Technological advancements in medicine/agri",
+                explanation = "Directly mentioned as a cause for the population explosion."
+            ),
+            com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                q = "Which word from the passage most nearly means 'to make something less severe'?",
+                options = listOf("Climb", "Mitigating", "Scrutiny", "Acceleration"),
+                a = "Mitigating",
+                explanation = "Mitigating means making something less severe or painful."
+            ),
+            com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                q = "What is the tone of the author towards the current economic model?",
+                options = listOf("Celebratory", "Indifferent", "Critical and Apprehensive", "Purely Academic"),
+                a = "Critical and Apprehensive",
+                explanation = "The mention of 'ecological cost' and 'scrutiny' indicates a critical view."
             )
         )
     )

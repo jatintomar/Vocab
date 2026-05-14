@@ -40,7 +40,8 @@ data class PQRSQuestion(
     val s6: String? = null,
     val sentences: List<String>,
     val correctSequence: String,
-    val explanation: String
+    val explanation: String,
+    val logicalConnectors: List<String> = emptyList()
 )
 
 data class ClozeQuestion(

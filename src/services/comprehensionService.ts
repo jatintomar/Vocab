@@ -61,8 +61,8 @@ export async function getDailyComprehension(): Promise<DailyComprehensionData> {
     Required Content:
     1. 5 PQRS questions. At least 3 must be "S1 and S6" style (Fixed start and end).
     2. 2 DIFFERENT Cloze Tests with 5 blanks each (Context: Tech, Philosophy, or Economics).
-    3. 1 LONG Reading Comprehension passage (400-500 words). Vocabulary should be challenging.
-       - Provide 4 questions: 1 Title/Theme, 1 Inference, 1 Fact-based, 1 Vocabulary (Synonym/Antonym from context).
+    3. 1 LONG Reading Comprehension passage (450-600 words) of SSC CGL and CHSL 2026 pattern difficulty level.
+       - Provide exactly 5 questions: 1 Title/Theme, 1 Inference, 1 Fact-based, 1 Vocabulary (Synonym/Antonym from context), and 1 Tone/Style question.
     
     For every question, provide a "Smart Explanation" highlighting "Grammar Rules" or "Logical Connectors".
     

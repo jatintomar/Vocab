@@ -53,14 +53,30 @@ object AndroidGeminiService {
         }
     }
 
+    suspend fun getDailyInsight(): JSONObject? = withContext(Dispatchers.IO) {
+        if (apiKey.isEmpty()) return@withContext null
+        val prompt = """
+            Provide a "Daily Vocabulary Pulse" for an SSC aspirant preparing for 2026.
+            Pick one very important high-yield word and provide:
+            1. The word itself.
+            2. A "Power Insight": Why this word is crucial specifically for competitive exams.
+            3. A "Modern Usage": How it might appear in a current 2026 news context.
+            Return ONLY a valid JSON object with keys: "word", "insight", "usage".
+        """.trimIndent()
+        try {
+            val response = model.generateContent(prompt)
+            JSONObject(response.text ?: "{}")
+        } catch (e: Exception) { null }
+    }
+
     suspend fun generatePQRS(): List<com.jtvocab.quiz.model.PQRSQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 (Last Mile Challenge).
+            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 / CHSL 2026 Pattern.
             Topic: Scientific breakthroughs, Philosophy, Global Economics, or High-level Literature.
             Include S1 (Fixed Start) and S6 (Fixed End) for all.
-            Sentences P, Q, R, S must be complex, logically dense, and use advanced connectors (However, Moreover, Consequently, Albeit).
-            Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4 strings labeled P:, Q:, R:, S:), "correctSequence" (e.g. "PRSQ"), "explanation".
+            Sentences P, Q, R, S must be complex, logically dense, and use advanced connectors.
+            Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4 strings), "correctSequence", "explanation", "logicalConnectors" (array of strings).
         """.trimIndent()
         try {
             val response = model.generateContent(prompt)
@@ -70,13 +86,16 @@ object AndroidGeminiService {
                 val obj = array.getJSONObject(i)
                 val sentencesArr = obj.getJSONArray("sentences")
                 val sentences = List(sentencesArr.length()) { sentencesArr.getString(it) }
+                val connectorsArr = obj.optJSONArray("logicalConnectors")
+                val connectors = if (connectorsArr != null) List(connectorsArr.length()) { connectorsArr.getString(it) } else emptyList()
                 list.add(com.jtvocab.quiz.model.PQRSQuestion(
                     id = obj.optString("id", UUID.randomUUID().toString()),
                     s1 = obj.optString("s1", null),
                     s6 = obj.optString("s6", null),
                     sentences = sentences,
                     correctSequence = obj.getString("correctSequence"),
-                    explanation = obj.getString("explanation")
+                    explanation = obj.getString("explanation"),
+                    logicalConnectors = connectors
                 ))
             }
             list
@@ -86,9 +105,8 @@ object AndroidGeminiService {
     suspend fun generateCloze(): List<com.jtvocab.quiz.model.ClozeQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2 (Last Mile Level).
+            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2 / CHSL 2026 Pattern.
             Difficulty: HIGH (Focus on vocabulary found in The Hindu editorials or Scientific journals).
-            Use words like 'obfuscate', 'recalcitrant', 'infinitesimal', 'paradigm', 'synergy'.
             Each passage should have 5 blanks.
             Return ONLY a JSON array of objects with keys: "id", "passage" (with (1), (2), etc. labels), "blanks" (array of objects with "index", "options", "answer", "explanation").
         """.trimIndent()
@@ -123,12 +141,15 @@ object AndroidGeminiService {
     suspend fun generateRC(): com.jtvocab.quiz.model.RCQuestion? = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext null
         val prompt = """
-            Generate 1 LONG High Difficulty Reading Comprehension passage (400-500 words) for SSC CGL Tier 2.
-            Topic: Geopolitics, Quantum Physics simplified, Global Economics, or History of Enlightenment.
-            Include 5 complex questions requiring deep inference.
-            Provide:
-            1 Title/Theme question, 1 Inference question, 1 Fact-based question, 1 Vocabulary question (Synonym/Antonym from context), 1 Tone/Style question.
-            For each question, provide a "Smart Explanation" highlighting logical connectors or context clues.
+            Generate 1 LONG Reading Comprehension passage (450-600 words) for SSC CGL/CHSL 2026 Pattern.
+            Topic: Advanced Geopolitics, Quantum Physics, Global Economics, or Modern Philosophy.
+            Include exactly 5 complex questions:
+            1. Theme/Main Idea question.
+            2. High-level Inference question.
+            3. Direct Fact discovery question.
+            4. Contextual Vocabulary (Finding synonyms/antonyms).
+            5. Author's Tone or Passage Style.
+            
             Return ONLY a JSON object with keys: "id", "passage", "questions" (array of objects with "q", "options", "a", "explanation").
         """.trimIndent()
         try {
