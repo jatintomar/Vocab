@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw } from 'lucide-react';
+import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search } from 'lucide-react';
 import { getWordInsight, WordInsight } from './services/geminiService';
 
 interface VocabItem {
@@ -485,6 +485,29 @@ export default function App() {
   const theme = THEMES[themeKey] || THEMES.deepsea;
   const accent = ACCENTS[accentKey] || ACCENTS.blue;
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<VocabItem[]>([]);
+
+  // Search Logic
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const query = searchQuery.toLowerCase();
+    const results: VocabItem[] = [];
+    ['ow', 'sy', 'id', 'pv'].forEach(cat => {
+      const list = vocabData[cat as keyof typeof vocabData] || [];
+      const filtered = list.filter(item => 
+        item.w.toLowerCase().includes(query) || 
+        item.a.toLowerCase().includes(query) ||
+        item.h.toLowerCase().includes(query)
+      );
+      results.push(...filtered.map(item => ({ ...item, cat })));
+    });
+    setSearchResults(results.slice(0, 50)); // Limit for performance
+  }, [searchQuery]);
+
   const stats = useMemo(() => {
     if (!database) return { total: 0, mastered: 0 };
     const total = database.ow.length + database.sy.length + database.id.length + database.pv.length;
@@ -730,6 +753,26 @@ export default function App() {
               </div>
 
               <div className="flex flex-col gap-2">
+                {/* Search Bar */}
+                <div className="mb-4">
+                  <div className={`relative flex items-center p-3 rounded-2xl border ${theme.border} bg-white/5`}>
+                    <Search size={16} className="opacity-40 mr-2" />
+                    <input 
+                      type="text"
+                      placeholder="Search words..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onFocus={() => setIsSidebarOpen(true)}
+                      className="bg-transparent border-none outline-none text-xs w-full font-bold placeholder:opacity-30"
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="opacity-40 hover:opacity-100">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <button 
                   onClick={() => {
                     setMode('quiz');
@@ -1013,6 +1056,34 @@ export default function App() {
           }}
           className="w-full"
         >
+        {/* Search Results Overlay */}
+        {searchQuery ? (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black tracking-tighter">SEARCH RESULTS ({searchResults.length})</h3>
+              <button onClick={() => setSearchQuery('')} className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] hover:opacity-100 transition-opacity">Clear All</button>
+            </div>
+            <div className="flex flex-col gap-4">
+              {searchResults.map((item, i) => (
+                <LearnCard 
+                  key={`search-${item.id}-${i}`} 
+                  item={item} 
+                  cat={(item as any).cat || 'ow'} 
+                  globalSerial={i + 1}
+                  theme={theme}
+                  accent={ACCENTS[((item as any).cat === 'ow' ? 'blue' : (item as any).cat === 'sy' ? 'emerald' : (item as any).cat === 'id' ? 'amber' : 'violet') as AccentKey]}
+                />
+              ))}
+              {searchResults.length === 0 && (
+                 <div className={`p-16 rounded-[3rem] text-center border-2 border-dashed ${theme.border} opacity-40`}>
+                  <p className="text-sm font-bold uppercase tracking-widest text-slate-500">No matches found for "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
+            <div className={`my-12 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent`} />
+          </div>
+        ) : null}
+
         {/* Achievements Rail */}
         {achievements.length > 0 && (
           <div className="mb-6 overflow-x-auto no-scrollbar pb-2">

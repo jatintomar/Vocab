@@ -139,6 +139,7 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     currentCat = cat,
                     currentMode = mode,
                     isChallengeMode = viewModel.isChallengeMode.value,
+                    viewModel = viewModel,
                     onCatSelect = { 
                         cat = it
                         if (viewModel.isChallengeMode.value) {
@@ -176,6 +177,8 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
         gesturesEnabled = true
     ) {
         val isChallenge = viewModel.isChallengeMode.value
+        val searchQuery by viewModel.searchQuery
+
         Scaffold(
             topBar = {
                 CustomTopBar(
@@ -187,7 +190,10 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                if (isChallenge) {
+                if (searchQuery.isNotEmpty()) {
+                    SearchResultsSection(viewModel)
+                } else {
+                    if (isChallenge) {
                     CategoryTabs(cat) { 
                         cat = it
                         viewModel.startChallengeQuiz(viewModel.challengeDay.value, it)
@@ -216,6 +222,52 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                         "quiz" -> QuizSection(viewModel)
                         "learn" -> LearnSection(viewModel, cat)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultsSection(viewModel: VocabViewModel) {
+    val results by viewModel.searchResults
+    val searchQuery by viewModel.searchQuery
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "SEARCH RESULTS (${results.size})",
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(0.4f),
+                letterSpacing = 1.sp
+            )
+            Text(
+                "CLEAR",
+                modifier = Modifier.clickable { viewModel.clearSearch() },
+                fontWeight = FontWeight.Black,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        if (results.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    "No results found for \"$searchQuery\"",
+                    fontSize = 14.sp,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.4f)
+                )
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 32.dp)) {
+                itemsIndexed(results) { index, item ->
+                    LearnCard(index + 1, VocabViewModel.QuizItem(item, emptyList()), viewModel)
                 }
             }
         }
@@ -316,6 +368,7 @@ fun DashboardContent(
     currentCat: String,
     currentMode: String,
     isChallengeMode: Boolean,
+    viewModel: VocabViewModel,
     onCatSelect: (String) -> Unit,
     onModeSelect: (String) -> Unit,
     onChallengeClick: () -> Unit,
@@ -326,7 +379,7 @@ fun DashboardContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 32.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -350,7 +403,32 @@ fun DashboardContent(
             )
         }
 
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(32.dp))
+
+        // Search Bar in Drawer
+        OutlinedTextField(
+            value = viewModel.searchQuery.value,
+            onValueChange = { viewModel.onSearchQueryChange(it) },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Search words or meanings...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.3f)) },
+            leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface.copy(0.3f)) },
+            trailingIcon = {
+                if (viewModel.searchQuery.value.isNotEmpty()) {
+                    IconButton(onClick = { viewModel.clearSearch() }) {
+                        Icon(Icons.Default.Clear, null, modifier = Modifier.size(18.dp))
+                    }
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+            )
+        )
+
+        Spacer(Modifier.height(32.dp))
 
         DrawerItem(
             icon = Icons.Default.Star,
@@ -736,6 +814,15 @@ fun QuizSection(viewModel: VocabViewModel) {
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
+                val setItemsCount = when(quiz.item.cat) {
+                    "ow" -> 50
+                    "sy" -> 25
+                    "id" -> 25
+                    "ph" -> 10
+                    else -> 25
+                }
+                val globalSerial = if (currentSetIndex >= 0) (currentSetIndex * setItemsCount) + index + 1 else index + 1
+
                 if (index == 0 || quizItems[index - 1].item.cat != quiz.item.cat) {
                     val label = when(quiz.item.cat) {
                         "ow" -> "ONE WORD SUBSTITUTION"
@@ -753,7 +840,7 @@ fun QuizSection(viewModel: VocabViewModel) {
                         letterSpacing = 2.sp
                     )
                 }
-                QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
+                QuizCard(globalSerial, quiz, viewModel) { viewModel.submitAnswer(index, it) }
             }
             
             if (quizItems.isNotEmpty()) {
@@ -795,7 +882,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(10.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text("#$index", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 }
                 androidx.compose.material3.IconButton(
                     onClick = { showHint = !showHint },
@@ -935,6 +1022,15 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         itemsIndexed(items = quizItems) { index, quizItem ->
+            val setItemsCount = when(quizItem.item.cat) {
+                "ow" -> 50
+                "sy" -> 25
+                "id" -> 25
+                "ph" -> 10
+                else -> 25
+            }
+            val globalSerial = if (currentSetIndex >= 0) (currentSetIndex * setItemsCount) + index + 1 else index + 1
+
             if (index == 0 || quizItems[index - 1].item.cat != quizItem.item.cat) {
                 val label = when(quizItem.item.cat) {
                     "ow" -> "ONE WORD SUBSTITUTION"
@@ -953,7 +1049,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
                 )
             }
             
-            LearnCard(index, quizItem, viewModel)
+            LearnCard(globalSerial, quizItem, viewModel)
         }
 
         if (quizItems.isNotEmpty()) {
@@ -996,7 +1092,7 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    "#${index + 1}",
+                    "#$index",
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface.copy(0.3f)

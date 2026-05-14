@@ -31,6 +31,33 @@ class VocabViewModel : ViewModel() {
     private val _dailyPulse = mutableStateOf<org.json.JSONObject?>(null)
     val dailyPulse: State<org.json.JSONObject?> = _dailyPulse
 
+    private val _searchQuery = mutableStateOf("")
+    val searchQuery: State<String> = _searchQuery
+
+    private val _searchResults = mutableStateOf<List<VocabItem>>(emptyList())
+    val searchResults: State<List<VocabItem>> = _searchResults
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        
+        val lowercaseQuery = query.lowercase()
+        val allItems = VocabRepository.ows + VocabRepository.synonyms + VocabRepository.idioms + VocabRepository.phrasal
+        _searchResults.value = allItems.filter { 
+            it.w.contains(lowercaseQuery, ignoreCase = true) || 
+            it.a.contains(lowercaseQuery, ignoreCase = true) ||
+            it.h.contains(lowercaseQuery, ignoreCase = true)
+        }.take(50)
+    }
+
+    fun clearSearch() {
+        _searchQuery.value = ""
+        _searchResults.value = emptyList()
+    }
+
     init {
         fetchDailyPulse()
     }
@@ -206,9 +233,43 @@ class VocabViewModel : ViewModel() {
     }
 
     fun finishSession() {
+        val currentBatch = _currentQuizBatch.value
+        val cat = currentBatch.firstOrNull()?.item?.cat ?: "ow"
+        val isWeakMode = _currentSetIndex.value == -1
+        
         markSetAsLearned()
-        // Reset or navigate back
-        _currentQuizBatch.value = emptyList()
+        
+        if (!_isChallengeMode.value && !isWeakMode) {
+            val nextSet = _currentSetIndex.value + 1
+            val setItemsCount = when(cat) {
+                "ow" -> 50
+                "sy" -> 25
+                "id" -> 25
+                "ph" -> 10
+                else -> 25
+            }
+            val listSize = when(cat) {
+                "ow" -> VocabRepository.ows.size
+                "sy" -> VocabRepository.synonyms.size
+                "id" -> VocabRepository.idioms.size
+                "ph" -> VocabRepository.phrasal.size
+                else -> 0
+            }
+            val totalSets = if (listSize > 0) (listSize + setItemsCount - 1) / setItemsCount else 0
+            
+            if (nextSet < totalSets) {
+                startQuiz(cat, nextSet)
+            } else {
+                _currentQuizBatch.value = emptyList()
+            }
+        } else if (_isChallengeMode.value) {
+             // For challenge mode, let user pick next cat or day manually for now
+             // Or we could auto-advance day if all cats finished?
+             // User just mentioned "next set", so standard sets are priority.
+             _currentQuizBatch.value = emptyList()
+        } else {
+            _currentQuizBatch.value = emptyList()
+        }
     }
 
     private fun addToWeakList(item: VocabItem) {
