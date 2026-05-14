@@ -161,7 +161,8 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
       .slice(0, 3)
       .map(x => x.word);
 
-    return [item.a, ...distractors].sort(() => 0.5 - Math.random());
+    // Filter duplicates to avoid React key errors if same word exists with different meanings
+    return Array.from(new Set([item.a, ...distractors])).sort(() => 0.5 - Math.random());
   }, [item.id, parentCat, database]);
 
   const state = answered[idx];
