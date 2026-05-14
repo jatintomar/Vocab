@@ -47,15 +47,37 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun VocabTheme(content: @Composable () -> Unit) {
+fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () -> Unit) {
+    val state by viewModel.state
+    val accentColor = Color(state.accentColor)
+    
+    val backgroundColor = when (state.theme) {
+        "Deepsea" -> Color(0xFF030712)
+        "Evergreen" -> Color(0xFF064E3B)
+        "Parchment" -> Color(0xFFFDFCF2)
+        "Nordic" -> Color(0xFF111827)
+        else -> Color(0xFF111827)
+    }
+
+    val surfaceColor = when (state.theme) {
+        "Deepsea" -> Color(0xFF111827)
+        "Evergreen" -> Color(0xFF065F46)
+        "Parchment" -> Color(0xFFF5F5DC)
+        "Nordic" -> Color(0xFF1F2937)
+        else -> Color(0xFF1F2937)
+    }
+
+    val onSurface = if (state.theme == "Parchment") Color(0xFF1C1917) else Color.White
+    val onBackground = if (state.theme == "Parchment") Color(0xFF1C1917) else Color.White
+
     val colorScheme = darkColorScheme(
-        primary = Color(0xFFF59E0B), // Amber 500
-        background = Color(0xFF0F172A), // Slate 900
-        surface = Color(0xFF1E293B), // Slate 800
-        secondary = Color(0xFF6366F1), // Indigo 500
-        onPrimary = Color.Black,
-        onBackground = Color.White,
-        onSurface = Color.White
+        primary = accentColor,
+        background = backgroundColor,
+        surface = surfaceColor,
+        secondary = accentColor.copy(alpha = 0.7f),
+        onPrimary = if (state.theme == "Parchment") Color.White else Color.Black,
+        onBackground = onBackground,
+        onSurface = onSurface
     )
 
     MaterialTheme(
@@ -70,33 +92,107 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
     var mode by remember { mutableStateOf("quiz") } // quiz, learn, comp
     var cat by remember { mutableStateOf("ow") } // ow, sy, id
     val state by viewModel.state
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var showSettings by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Header(state.streak, state.achievements.filter { it.unlocked }.lastOrNull()?.icon ?: "🎓")
-                Spacer(modifier = Modifier.height(16.dp))
-                ModeSelector(mode) { mode = it }
+    LaunchedEffect(Unit) {
+        viewModel.startQuiz(cat, 0)
+    }
+
+    if (showSettings) {
+        SettingsDialog(viewModel) { showSettings = false }
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = MaterialTheme.colorScheme.background,
+                drawerContentColor = MaterialTheme.colorScheme.onBackground
+            ) {
+                DashboardContent(
+                    state = state,
+                    currentCat = cat,
+                    onCatSelect = { 
+                        cat = it
+                        viewModel.startQuiz(it, 0)
+                        scope.launch { drawerState.close() }
+                    },
+                    onModeSelect = {
+                        mode = it
+                        scope.launch { drawerState.close() }
+                    },
+                    onSettingsOpen = {
+                        showSettings = true
+                        scope.launch { drawerState.close() }
+                    }
+                )
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (mode != "comp") {
-                CategoryTabs(cat) { 
-                    cat = it
-                    viewModel.startQuiz(it, 0)
+        gesturesEnabled = true
+    ) {
+        Scaffold(
+            topBar = {
+                CustomTopBar(
+                    streak = state.streak,
+                    title = "JT VOCAB QUIZ",
+                    onMenuClick = { scope.launch { drawerState.open() } }
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding).fillMaxSize()) {
+                ModeSelector(mode) { mode = it }
+                
+                if (mode != "comp") {
+                    SetSelector(currentSet = viewModel.currentSetIndex.value) { setIndex ->
+                        viewModel.startQuiz(cat, setIndex)
+                    }
                 }
-            }
-            
-            Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                when (mode) {
-                    "quiz" -> QuizSection(viewModel)
-                    "learn" -> LearnSection(viewModel, cat)
-                    "comp" -> CompSection(viewModel)
+                
+                Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                    when (mode) {
+                        "quiz" -> QuizSection(viewModel)
+                        "learn" -> LearnSection(viewModel, cat)
+                        "comp" -> CompSection(viewModel)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+        }
+        
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                title,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = Color.White
+            )
+            Text(
+                "0%",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        StreakBadge(streak)
     }
 }
 
@@ -153,30 +249,301 @@ fun StreakBadge(streak: Int) {
 }
 
 @Composable
+fun DashboardContent(
+    state: AppState,
+    currentCat: String,
+    onCatSelect: (String) -> Unit,
+    onModeSelect: (String) -> Unit,
+    onSettingsOpen: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "JT DASHBOARD",
+                fontWeight = FontWeight.Black,
+                fontSize = 20.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = Color(0xFF60A5FA)
+            )
+            Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+        }
+
+        Spacer(Modifier.height(40.dp))
+
+        DrawerItem(
+            icon = Icons.Default.Face,
+            title = "DAILY COMP.",
+            subtitle = "Shift Pattern 2026",
+            isSelected = false,
+            onClick = { onModeSelect("comp") }
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        DrawerItem(
+            icon = Icons.Default.Menu,
+            title = "VOCAB PRACTICE",
+            subtitle = "OW / Set 1",
+            isSelected = true,
+            onClick = { onModeSelect("quiz") }
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Text("VOCAB CATEGORIES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+        Spacer(Modifier.height(8.dp))
+        
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cats = listOf("ow" to "OWS", "sy" to "SYNONYMS")
+            cats.forEach { (id, label) ->
+                CatButton(label, currentCat == id, modifier = Modifier.weight(1f)) { onCatSelect(id) }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val cats = listOf("id" to "IDIOMS", "ph" to "PHRASAL")
+            cats.forEach { (id, label) ->
+                CatButton(label, currentCat == id, modifier = Modifier.weight(1f)) { onCatSelect(id) }
+            }
+        }
+
+        Spacer(Modifier.height(40.dp))
+
+        DrawerItem(
+            icon = Icons.Default.FavoriteBorder,
+            title = "75 DAY PLAN",
+            subtitle = "Progress: 0%",
+            isSelected = false,
+            onClick = {}
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        DrawerItem(
+            icon = Icons.Default.Info,
+            title = "WEAK LIST",
+            subtitle = "0 terms to revise",
+            isSelected = false,
+            color = Color(0xFFF43F5E),
+            onClick = {}
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onSettingsOpen() }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Settings, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(16.dp))
+            Text("APP SETTINGS", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+fun DrawerItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    color: Color = Color(0xFF3B82F6),
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (isSelected) color else Color.Transparent)
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, tint = if (isSelected) Color.White else Color.Gray, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(16.dp))
+        Column {
+            Text(title, fontWeight = FontWeight.Black, fontSize = 14.sp, color = if (isSelected) Color.White else Color.Gray)
+            Text(subtitle, fontSize = 10.sp, color = if (isSelected) Color.White.copy(0.7f) else Color.Gray.copy(0.7f))
+        }
+    }
+}
+
+@Composable
+fun CatButton(label: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isSelected) Color(0xFF3B82F6) else Color(0xFF1E293B))
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) Color.White else Color.Gray)
+    }
+}
+
+@Composable
+fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(10) { index ->
+            val setNum = index + 1
+            val isSelected = currentSet == index
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Color(0xFF3B82F6) else Color(0xFF1E293B))
+                    .clickable { onSelect(index) }
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "SET $setNum",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp,
+                    color = if (isSelected) Color.White else Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
+    val state by viewModel.state
+    AlertDialog(
+        onDismissRequest = onClose,
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp)),
+            color = Color(0xFF111827)
+        ) {
+            Column(Modifier.padding(24.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("SETTINGS", fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 24.sp, color = Color(0xFF3B82F6))
+                    IconButton(onClick = onClose) { Icon(Icons.Default.Close, null, tint = Color.Gray) }
+                }
+
+                Spacer(Modifier.height(24.dp))
+                Text("ACCENT COLOR", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                Spacer(Modifier.height(16.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val colors = listOf(0xFF3B82F6, 0xFF06B6D4, 0xFF10B981, 0xFFF43F5E, 0xFFF59E0B, 0xFF8B5CF6)
+                    colors.forEach { colorVal ->
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color(colorVal))
+                                .border(if (state.accentColor == colorVal) 4.dp else 0.dp, Color.White, CircleShape)
+                                .clickable { viewModel.setAccentColor(colorVal) }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(32.dp))
+                Text("APPEARANCE THEMES", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                Spacer(Modifier.height(16.dp))
+                
+                val themes = listOf("Deepsea", "Evergreen", "Parchment", "Nordic")
+                themes.chunked(2).forEach { row ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        row.forEach { themeName ->
+                            ThemeButton(themeName, state.theme == themeName, modifier = Modifier.weight(1f)) { viewModel.setTheme(themeName) }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                Spacer(Modifier.height(32.dp))
+                HorizontalDivider(color = Color.White.copy(0.05f))
+                Spacer(Modifier.height(32.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SettingsActionButton(Icons.Default.KeyboardArrowDown, "EXPORT", modifier = Modifier.weight(1f))
+                    SettingsActionButton(Icons.Default.KeyboardArrowUp, "IMPORT", modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ThemeButton(name: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, if (isSelected) Color(0xFF3B82F6) else Color.White.copy(0.05f), RoundedCornerShape(16.dp))
+            .background(if (isSelected) Color(0xFF3B82F6).copy(0.1f) else Color.Transparent)
+            .clickable { onClick() }
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(name.uppercase(), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = if (isSelected) Color.White else Color.Gray)
+    }
+}
+
+@Composable
+fun SettingsActionButton(icon: ImageVector, label: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(0.03f))
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(label, fontWeight = FontWeight.Black, fontSize = 10.sp, color = Color.White)
+    }
+}
+
+@Composable
 fun ModeSelector(current: String, onSelect: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
             .padding(4.dp)
     ) {
-        listOf("quiz" to "Quiz", "learn" to "Learn", "comp" to "Comp").forEach { (id, label) ->
+        listOf("quiz" to "QUIZ MODE", "learn" to "LEARN MODE").forEach { (id, label) ->
             val isSelected = current == id
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isSelected) Color(0xFF3B82F6) else Color.Transparent)
                     .clickable { onSelect(id) }
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     label,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontWeight = FontWeight.Black,
                     fontSize = 12.sp,
-                    color = if (isSelected) Color.Black else Color.White
+                    color = if (isSelected) Color.White else Color.Gray
                 )
             }
         }
@@ -218,7 +585,7 @@ fun QuizSection(viewModel: VocabViewModel) {
             ChallengeCard()
         }
         itemsIndexed(quizItems) { index, quiz ->
-            QuizCard(quiz, viewModel) { viewModel.submitAnswer(index, it) }
+            QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
 }
@@ -228,10 +595,11 @@ fun ChallengeCard() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(bottom = 24.dp)
             .clip(RoundedCornerShape(32.dp))
             .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF4F46E5), Color(0xFF7C3AED))
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
                 )
             )
             .padding(24.dp)
@@ -239,10 +607,13 @@ fun ChallengeCard() {
         Column {
             Text("75 DAY CHALLENGE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White.copy(0.7f))
             Text("DAY 14: THE ASCENT", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             LinearProgressIndicator(
-                progress = 0.18f,
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                progress = 0.25f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(CircleShape),
                 color = Color.White,
                 trackColor = Color.White.copy(0.2f)
             )
@@ -251,81 +622,130 @@ fun ChallengeCard() {
 }
 
 @Composable
-fun QuizCard(quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
+fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
     val insight by viewModel.currentInsight
     val loadingAI by viewModel.loadingAI
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(8.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+        elevation = CardDefaults.cardElevation(0.dp),
+        border = BorderStroke(1.dp, Color.White.copy(0.05f))
     ) {
         Column(Modifier.padding(24.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Menu, null, tint = Color.Gray, modifier = Modifier.size(12.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("#${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                }
+                Icon(Icons.Default.Info, null, tint = Color(0xFF3B82F6), modifier = Modifier.size(20.dp))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 quiz.item.w,
-                fontSize = 24.sp,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.primary,
-                lineHeight = 32.sp
+                color = Color(0xFF3B82F6),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                lineHeight = 36.sp
             )
-            Text(
-                quiz.item.h,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary.copy(0.6f),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
             
+            Spacer(modifier = Modifier.height(32.dp))
+
             quiz.options.forEach { option ->
                 val isCorrect = option == quiz.item.a
                 val isSelected = quiz.selectedOption == option
-                val color = when {
+                val borderColor = when {
                     quiz.isAnswered && isCorrect -> Color(0xFF10B981)
                     isSelected && !isCorrect -> Color(0xFFEF4444)
-                    else -> Color(0xFF0F172A)
+                    isSelected -> Color(0xFF3B82F6)
+                    else -> Color.White.copy(0.05f)
                 }
                 
-                Button(
+                Surface(
                     onClick = { onAnswer(option) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = color),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, borderColor)
                 ) {
                     Text(
                         option,
-                        modifier = Modifier.padding(vertical = 6.dp),
+                        modifier = Modifier.padding(20.dp),
                         fontWeight = FontWeight.Bold,
-                        color = if (quiz.isAnswered && (isCorrect || isSelected)) Color.White else Color.White.copy(0.7f)
+                        fontSize = 16.sp,
+                        color = if (quiz.isAnswered && isCorrect) Color(0xFF10B981) else Color.White
                     )
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White.copy(0.03f))
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("SESSION MASTERY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                        Text("0/50", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF3B82F6))
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = 0f,
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                        color = Color(0xFF3B82F6),
+                        trackColor = Color.White.copy(0.1f)
+                    )
+                }
+                
+                Spacer(Modifier.width(24.dp))
+                
+                VerticalDivider(modifier = Modifier.height(24.dp), color = Color.White.copy(0.1f))
+                
+                Spacer(Modifier.width(24.dp))
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color.Gray)
+                    Text("0", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF3B82F6))
                 }
             }
             
             Spacer(Modifier.height(16.dp))
-            
-            // AI Action Button
-            Button(
-                onClick = { 
-                    if (insight != null) viewModel.clearInsight() 
-                    else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (loadingAI) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.secondary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("AI THINKING...", fontSize = 10.sp, fontWeight = FontWeight.Black)
-                    } else {
-                        Icon(Icons.Default.Star, null, tint = if (insight != null) Color(0xFFF59E0B) else Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (insight != null) "HIDE AI CONTEXT" else "AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black)
+
+            // AI Action Button (as seen in screenshot 1)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(16.dp))
+                    .clickable { 
+                        if (insight != null) viewModel.clearInsight() 
+                        else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
                     }
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (loadingAI) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Color(0xFF3B82F6))
+                } else {
+                    Icon(Icons.Default.Star, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White)
                 }
             }
 
@@ -339,11 +759,9 @@ fun QuizCard(quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer:
                             .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))
                             .padding(16.dp)
                     ) {
-                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
+                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF6366F1))
                         Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
-                        
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
-                        
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
                         Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
                         Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }

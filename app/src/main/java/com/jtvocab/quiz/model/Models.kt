@@ -23,6 +23,8 @@ data class AppState(
     val weakListOW: List<VocabItem> = emptyList(),
     val weakListSY: List<VocabItem> = emptyList(),
     val weakListID: List<VocabItem> = emptyList(),
+    val accentColor: Long = 0xFF6366F1, // Default indigo
+    val theme: String = "Nordic",
     val achievements: List<Achievement> = listOf(
         Achievement("early_bird", "Early Bird", "🌅"),
         Achievement("streak_3", "Fire Starter", "🔥"),

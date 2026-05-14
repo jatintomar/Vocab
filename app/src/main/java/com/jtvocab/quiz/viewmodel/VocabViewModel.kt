@@ -45,11 +45,23 @@ class VocabViewModel : ViewModel() {
     data class QuizItem(
         val item: VocabItem,
         val options: List<String>,
-        var isAnswered: Boolean = false,
-        var selectedOption: String? = null
+        val isAnswered: Boolean = false,
+        val selectedOption: String? = null
     )
 
+    private val _currentSetIndex = mutableStateOf(0)
+    val currentSetIndex: State<Int> = _currentSetIndex
+
+    fun setAccentColor(color: Long) {
+        _state.value = _state.value.copy(accentColor = color)
+    }
+
+    fun setTheme(theme: String) {
+        _state.value = _state.value.copy(theme = theme)
+    }
+
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {
+        _currentSetIndex.value = setIndex
         val items = if (isWeakMode) {
             when(cat) {
                 "ow" -> _state.value.weakListOW
@@ -79,8 +91,10 @@ class VocabViewModel : ViewModel() {
         val quizItem = currentBatch[quizIndex]
         if (quizItem.isAnswered) return
 
-        quizItem.isAnswered = true
-        quizItem.selectedOption = answer
+        currentBatch[quizIndex] = quizItem.copy(
+            isAnswered = true,
+            selectedOption = answer
+        )
         _currentQuizBatch.value = currentBatch
 
         if (answer != quizItem.item.a) {
