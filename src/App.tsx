@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote } from 'lucide-react';
+import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2 } from 'lucide-react';
 import { getWordInsight, WordInsight } from './services/geminiService';
+import { getDailyComprehension, DailyComprehensionData } from './services/comprehensionService';
+import { ComprehensionView } from './components/ComprehensionView';
 
 interface VocabItem {
   id: string;
@@ -18,7 +20,7 @@ interface VocabData {
   pv: VocabItem[];
 }
 
-type AppMode = 'quiz' | 'learn';
+type AppMode = 'quiz' | 'learn' | 'comp';
 type Category = 'ow' | 'sy' | 'id' | 'pv';
 
 type ThemeKey = 'deepsea' | 'evergreen' | 'parchment' | 'nordic';
@@ -117,11 +119,38 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
     else if (item.id.startsWith('id')) actualCat = 'id';
     else if (item.id.startsWith('pv')) actualCat = 'pv';
 
-    const distractors = (database[actualCat] || [])
-      .filter(x => x.id !== item.id)
-      .sort(() => 0.5 - Math.random())
+    const allPotential = (database[actualCat] || []).filter(x => x.id !== item.id);
+    
+    // Smart similarity scoring
+    const scored = allPotential.map(candidate => {
+      let score = 0;
+      const cWord = candidate.a.toLowerCase();
+      const iWord = item.a.toLowerCase();
+      
+      // 1. Prefix match (Very strong similarity)
+      if (cWord.slice(0, 3) === iWord.slice(0, 3)) score += 100;
+      else if (cWord.slice(0, 2) === iWord.slice(0, 2)) score += 50;
+      else if (cWord[0] === iWord[0]) score += 20;
+
+      // 2. Length similarity
+      const lenDiff = Math.abs(cWord.length - iWord.length);
+      if (lenDiff === 0) score += 10;
+      else if (lenDiff <= 2) score += 5;
+
+      // 3. Suffix match (Common for phrasal verbs or similar word endings)
+      if (cWord.slice(-3) === iWord.slice(-3)) score += 30;
+
+      // Add a bit of randomness to the score to keep it fresh
+      score += Math.random() * 5;
+
+      return { word: candidate.a, score };
+    });
+
+    const distractors = scored
+      .sort((a, b) => b.score - a.score)
       .slice(0, 3)
-      .map(x => x.a);
+      .map(x => x.word);
+
     return [item.a, ...distractors].sort(() => 0.5 - Math.random());
   }, [item.id, parentCat, database]);
 
@@ -328,8 +357,16 @@ export default function App() {
   const TOTAL_PLAN_DAYS = 75;
 
   const [mode, setMode] = useState<AppMode>('quiz');
+  const [compData, setCompData] = useState<DailyComprehensionData | null>(null);
+  const [compAnswered, setCompAnswered] = useState<Record<string, any>>({});
+  const [compSessionMode, setCompSessionMode] = useState<'quiz' | 'exam'>('quiz');
+  const [loadingComp, setLoadingComp] = useState(false);
+  const [showCompResults, setShowCompResults] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cat, setCat] = useState<Category>('ow');
-  const [curSet, setCurSet] = useState(0);
+  const [categoryLastSets, setCategoryLastSets] = useState<Record<Category, number>>({ ow: 0, sy: 0, id: 0, pv: 0 });
+  const curSet = categoryLastSets[cat] || 0;
+  const setCurSet = (val: number, targetCat?: Category) => setCategoryLastSets(prev => ({ ...prev, [targetCat || cat]: val }));
   const [streak, setStreak] = useState(3);
   const [themeKey, setThemeKey] = useState<ThemeKey>('deepsea');
   const [accentKey, setAccentKey] = useState<AccentKey>('blue');
@@ -368,8 +405,9 @@ export default function App() {
       return combined;
     }
     let list = database[cat];
+    const curSet = categoryLastSets[cat] || 0;
     return list.slice(curSet * SET_SIZE, (curSet + 1) * SET_SIZE);
-  }, [cat, curSet, database, isWeakRevision, weakList, isChallengeMode, challengeDay]);
+  }, [cat, categoryLastSets, database, isWeakRevision, weakList, isChallengeMode, challengeDay]);
 
   const totalSets = useMemo(() => {
     if (!database) return 0;
@@ -434,8 +472,39 @@ export default function App() {
       if (parsed.accentKey && ACCENTS[parsed.accentKey as AccentKey]) {
         setAccentKey(parsed.accentKey as AccentKey);
       }
+      if (parsed.cat) {
+        setCat(parsed.cat as Category);
+      }
+      if (parsed.categoryLastSets) {
+        setCategoryLastSets(parsed.categoryLastSets);
+      } else if (typeof parsed.curSet === 'number') {
+        // Migration for old structure
+        setCategoryLastSets(prev => ({ ...prev, [parsed.cat || 'ow']: parsed.curSet }));
+      }
+      
+      // Daily Comprehension Sync
+      if (parsed.compData && parsed.compDataTimestamp) {
+        const savedDate = new Date(parsed.compDataTimestamp).toDateString();
+        const todayDate = new Date().toDateString();
+        if (savedDate === todayDate) {
+          setCompData(parsed.compData);
+        }
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (!compData) {
+      setLoadingComp(true);
+      getDailyComprehension().then(data => {
+        setCompData(data);
+        setLoadingComp(false);
+      }).catch(err => {
+        console.error("AI Fetch error:", err);
+        setLoadingComp(false);
+      });
+    }
+  }, [compData]);
 
   useEffect(() => {
     localStorage.setItem('jt_vocab_v2', JSON.stringify({ 
@@ -447,9 +516,13 @@ export default function App() {
       completedChallengeDays,
       activityHistory,
       achievements,
-      challengeDay
+      challengeDay,
+      compData,
+      compDataTimestamp: compData ? new Date().toISOString() : null,
+      cat,
+      categoryLastSets
     }));
-  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay]);
+  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, compData, cat, categoryLastSets]);
 
   const handleAnswer = (qIdx: number, item: VocabItem, choice: string) => {
     if (answered[qIdx]) return;
@@ -489,6 +562,7 @@ export default function App() {
       }
     } else if (!isWeakRevision && correctCount >= activeBatch.length * 0.8) {
        setCompletedSets(prev => {
+         const curSet = categoryLastSets[cat] || 0;
          if (prev[cat].includes(curSet)) return prev;
          return { ...prev, [cat]: [...prev[cat], curSet] };
        });
@@ -595,108 +669,177 @@ export default function App() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`absolute top-0 left-0 bottom-0 w-[85%] max-w-xs p-8 flex flex-col shadow-2xl ${theme.card} ${theme.text}`}
+              className={`absolute top-0 left-0 bottom-0 w-[75%] max-w-xs p-6 flex flex-col shadow-2xl ${theme.card} ${theme.text}`}
             >
-              <div className="flex justify-between items-center mb-12">
-                <h2 className={`text-xl font-black ${accent.text} tracking-wide italic`}>JT VOCAB QUIZ</h2>
-                <button onClick={() => setIsSidebarOpen(false)} className="opacity-50 hover:opacity-100"><X /></button>
+              <div className="flex justify-between items-center mb-10">
+                <h2 className={`text-lg font-black ${accent.text} tracking-tight italic`}>JT DASHBOARD</h2>
+                <button onClick={() => setIsSidebarOpen(false)} className="opacity-50 hover:opacity-100 p-2"><X size={20} /></button>
               </div>
 
-                <div className="flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
-                  <button 
-                    onClick={() => {
-                      setIsChallengeMode(false);
-                      setIsWeakRevision(false);
-                      setAnswered({});
-                      setIsSidebarOpen(false);
-                      setShowResults(false);
-                    }}
-                    className={`text-left text-lg font-black tracking-tight flex items-center justify-between ${!isChallengeMode && !isWeakRevision ? accent.text : 'opacity-40 hover:opacity-100'}`}
-                  >
-                    PRACTICE
-                  </button>
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => {
+                    setMode('comp');
+                    setIsSidebarOpen(false);
+                    setShowResults(false);
+                    if (!compData) {
+                      setLoadingComp(true);
+                      getDailyComprehension().then(data => {
+                        setCompData(data);
+                        setLoadingComp(false);
+                      });
+                    }
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-3xl transition-all ${mode === 'comp' ? `${accent.bg} text-white shadow-lg` : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                >
+                  <BrainCircuit size={20} />
+                  <div className="text-left">
+                    <p className="text-xs font-black uppercase tracking-widest">Daily Comp.</p>
+                    <p className="text-[9px] opacity-70">Shift Pattern 2026</p>
+                  </div>
+                </button>
 
-                  {!isChallengeMode && !isWeakRevision && (
-                    <div className="flex flex-col gap-4 pl-4 border-l-2 border-white/10">
-                      {[
-                        { id: 'ow', label: 'One Word Substitution' },
-                        { id: 'sy', label: 'Synonyms' },
-                        { id: 'id', label: 'Idioms & Phrases' },
-                        { id: 'pv', label: 'Phrasal Verbs' }
-                      ].map(item => (
-                        <button 
-                          key={item.id}
-                          onClick={() => { 
-                            setCat(item.id as Category); 
-                            setCurSet(0); 
-                            setAnswered({}); 
-                            setIsSidebarOpen(false); 
-                          }}
-                          className={`text-left text-sm font-bold transition-all ${cat === item.id ? accent.text : 'opacity-40 hover:opacity-100'}`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className={`h-px ${theme.border} border-t my-2 opacity-50`} />
-                  
-                  <button 
-                    onClick={() => {
-                      setIsWeakRevision(true);
-                      setAnswered({});
-                      setIsSidebarOpen(false);
-                      setShowResults(false);
-                      setIsChallengeMode(false);
-                    }}
-                    className={`text-left text-lg font-black tracking-tight flex items-center justify-between ${isWeakRevision ? 'text-rose-500' : 'opacity-40 hover:text-rose-400'}`}
-                  >
-                    WEAK LIST
-                    <span className="bg-rose-500/20 text-rose-500 px-2 py-0.5 rounded-md text-[9px] font-black">{weakList[cat].length}</span>
-                  </button>
+                <button 
+                  onClick={() => {
+                    setMode('quiz');
+                    setIsChallengeMode(false);
+                    setIsWeakRevision(false);
+                    setIsSidebarOpen(false);
+                    setShowResults(false);
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-3xl transition-all ${mode === 'quiz' && !isChallengeMode && !isWeakRevision ? `${accent.bg} text-white shadow-lg` : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                >
+                  <LayoutGrid size={20} />
+                  <div className="text-left">
+                    <p className="text-xs font-black uppercase tracking-widest">Vocab Practice</p>
+                    <p className="text-[9px] opacity-70">{cat.toUpperCase()} / Set {curSet + 1}</p>
+                  </div>
+                </button>
 
-                  <div className={`h-px ${theme.border} border-t my-2 opacity-50`} />
-
-                  <button 
-                    onClick={() => {
-                      setIsChallengeMode(true);
-                      setIsWeakRevision(false);
-                      setAnswered({});
-                      setIsSidebarOpen(false);
-                      setShowResults(false);
-                    }}
-                    className={`text-left text-lg font-black tracking-tight flex items-center justify-between ${isChallengeMode ? accent.text : 'opacity-40 hover:opacity-100'}`}
-                  >
-                    75 DAYS PLAN
-                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${accent.bg} text-white`}>
-                      {completedChallengeDays.length}/{TOTAL_PLAN_DAYS}
-                    </span>
-                  </button>
+                <div className="flex flex-col gap-2 p-2 bg-black/5 rounded-3xl">
+                  <p className="text-[9px] font-black uppercase tracking-widest opacity-40 px-2 mt-1">Vocab Categories</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'ow', label: 'OWS' },
+                      { id: 'sy', label: 'Synonyms' },
+                      { id: 'id', label: 'Idioms' },
+                      { id: 'pv', label: 'Phrasal' }
+                    ].map(item => (
+                      <button 
+                        key={item.id}
+                        onClick={() => { 
+                          setCat(item.id as Category); 
+                          setAnswered({}); 
+                          setShowResults(false);
+                          setMode('quiz');
+                          setIsChallengeMode(false);
+                          setIsWeakRevision(false);
+                          setIsSidebarOpen(false);
+                        }}
+                        className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${cat === item.id && mode === 'quiz' && !isChallengeMode && !isWeakRevision ? `${accent.bg} ${accent.border} text-white shadow-lg` : 'bg-white/5 border-white/5 opacity-50'}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className={`mt-auto space-y-6 pt-10 border-t ${theme.border}`}>
-                  <div className="space-y-4">
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Accent Color</p>
-                    <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => {
+                    setIsChallengeMode(true);
+                    setIsWeakRevision(false);
+                    setIsSidebarOpen(false);
+                    setShowResults(false);
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-3xl transition-all ${isChallengeMode ? `${accent.bg} text-white shadow-lg` : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+                >
+                  <Zap size={20} />
+                  <div className="text-left">
+                    <p className="text-xs font-black uppercase tracking-widest">75 Day Plan</p>
+                    <p className="text-[9px] opacity-70">Progress: {Math.round((completedChallengeDays.length / TOTAL_PLAN_DAYS) * 100)}%</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => {
+                    setIsWeakRevision(true);
+                    setIsSidebarOpen(false);
+                    setShowResults(false);
+                    setIsChallengeMode(false);
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-3xl transition-all ${isWeakRevision ? `bg-rose-600 text-white shadow-lg` : 'hover:bg-rose-500/5 text-rose-500/60 hover:text-rose-500'}`}
+                >
+                  <Award size={20} />
+                  <div className="text-left">
+                    <p className="text-xs font-black uppercase tracking-widest">Weak List</p>
+                    <p className="text-[9px] opacity-70">{weakList.ow.length + weakList.sy.length + weakList.id.length + weakList.pv.length} terms to revise</p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-white/5 space-y-4">
+                <button 
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    setIsSettingsOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-3xl hover:bg-white/5 transition-all opacity-60 hover:opacity-100"
+                >
+                  <Sun size={20} />
+                  <p className="text-xs font-black uppercase tracking-widest">App Settings</p>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`w-full max-w-sm rounded-[3rem] p-8 border space-y-8 relative overflow-hidden ${theme.card} ${theme.border}`}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className={`text-xl font-black ${accent.text} italic`}>SETTINGS</h3>
+                <button onClick={() => setIsSettingsOpen(false)} className="opacity-40 hover:opacity-100 p-2"><X size={20} /></button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Accent Color</p>
+                  <div className="flex flex-wrap gap-2">
                     {(Object.keys(ACCENTS) as AccentKey[]).map(ak => (
                       <button 
                         key={ak}
                         onClick={() => setAccentKey(ak)}
-                        className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center ${accentKey === ak ? `border-white ring-2 ring-offset-2 ${ACCENTS[ak].dot.replace('bg-', 'ring-')}` : 'border-transparent shadow-sm'}`}
+                        className={`w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center ${accentKey === ak ? `border-white ring-2 ring-offset-2 ${ACCENTS[ak].dot.replace('bg-', 'ring-')}` : 'border-transparent shadow-sm'}`}
                       >
-                        <div className={`w-5 h-5 rounded-full ${ACCENTS[ak].dot}`} />
+                        <div className={`w-6 h-6 rounded-full ${ACCENTS[ak].dot}`} />
                       </button>
                     ))}
                   </div>
+                </div>
 
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">Appearance Themes</p>
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Appearance Themes</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(Object.keys(THEMES) as ThemeKey[]).map(tk => (
                        <button 
                         key={tk}
                         onClick={() => setThemeKey(tk)}
-                        className={`py-2 px-3 rounded-xl text-[10px] font-bold uppercase tracking-tight border transition-all ${themeKey === tk ? `${accent.border} ${accent.bg.replace('bg-', 'bg-opacity-10 ' + accent.text)}` : 'border-slate-700 opacity-60'}`}
+                        className={`py-3 px-3 rounded-2xl text-[10px] font-bold uppercase tracking-tight border transition-all ${themeKey === tk ? `${accent.border} ${accent.bg.replace('bg-', 'bg-opacity-10 ' + accent.text)}` : 'border-white/5 opacity-60'}`}
                        >
                          {tk}
                        </button>
@@ -704,12 +847,51 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4 pt-4">
-                  <button className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity">
-                    <Download size={18} /> Export Data
+                <div className="h-px bg-white/5" />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => {
+                      const data = localStorage.getItem('jt_vocab_v2');
+                      const blob = new Blob([data || '{}'], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `jt_vocab_backup_${new Date().toISOString().split('T')[0]}.json`;
+                      a.click();
+                    }}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border border-white/5 hover:bg-white/5 transition-all group`}
+                  >
+                    <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Export</span>
                   </button>
-                  <button className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest opacity-80 hover:opacity-100 transition-opacity">
-                    <Upload size={18} /> Import Data
+                  <button 
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.json';
+                      input.onchange = (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (re) => {
+                            try {
+                              const parsed = JSON.parse(re.target?.result as string);
+                              localStorage.setItem('jt_vocab_v2', JSON.stringify(parsed));
+                              window.location.reload();
+                            } catch (error) {
+                              alert('Invalid backup file');
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border border-white/5 hover:bg-white/5 transition-all group`}
+                  >
+                    <Upload size={20} className="group-hover:-translate-y-0.5 transition-transform" />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Import</span>
                   </button>
                 </div>
               </div>
@@ -728,15 +910,23 @@ export default function App() {
         </button>
         <div className="flex flex-col items-center">
           <h1 className="text-lg font-black tracking-tighter italic uppercase leading-none">
-            {isWeakRevision ? <span className="text-rose-500">REVISING WEAK LIST</span> : 
+            {mode === 'comp' ? <span className={accent.text}>DAILY COMPREHENSION</span> :
+             isWeakRevision ? <span className="text-rose-500">REVISING WEAK LIST</span> : 
              isChallengeMode ? <span className={accent.text}>75 DAYS CHALLENGE</span> :
              'JT VOCAB QUIZ'}
           </h1>
           <div className="flex items-center gap-2 mt-1.5 w-32">
             <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">
-              <div className={`h-full ${accent.bg}`} style={{ width: `${(stats.mastered / (stats.total || 1)) * 100}%` }} />
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${(mode === 'comp' ? 0 : stats.mastered / (stats.total || 1)) * 100}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full ${accent.bg}`} 
+              />
             </div>
-            <span className={`text-[8px] font-black ${accent.text}`}>{Math.round((stats.mastered / (stats.total || 1)) * 100)}%</span>
+            <span className={`text-[8px] font-black ${accent.text}`}>
+              {mode === 'comp' ? 'DAILY' : `${Math.round((stats.mastered / (stats.total || 1)) * 100)}%`}
+            </span>
           </div>
         </div>
         <div className="flex flex-col items-end">
@@ -767,6 +957,31 @@ export default function App() {
       </div>
 
       <main className="w-full max-w-2xl px-4 pt-6 pb-40 mx-auto">
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          onDragEnd={(_, info) => {
+            const threshold = 50;
+            if (info.offset.x > threshold) {
+              // Swipe Right -> Prev Category
+              const cats: Category[] = ['ow', 'sy', 'id', 'pv'];
+              const idx = cats.indexOf(cat);
+              const prev = cats[(idx - 1 + cats.length) % cats.length];
+              setCat(prev);
+              setAnswered({});
+              setShowResults(false);
+            } else if (info.offset.x < -threshold) {
+              // Swipe Left -> Next Category
+              const cats: Category[] = ['ow', 'sy', 'id', 'pv'];
+              const idx = cats.indexOf(cat);
+              const next = cats[(idx + 1) % cats.length];
+              setCat(next);
+              setAnswered({});
+              setShowResults(false);
+            }
+          }}
+          className="w-full"
+        >
         {/* Achievements Rail */}
         {achievements.length > 0 && (
           <div className="mb-6 overflow-x-auto no-scrollbar pb-2">
@@ -883,10 +1098,12 @@ export default function App() {
                 <span className="bg-black/20 px-2 py-0.5 rounded">ID: 24</span>
                 <span className="bg-black/20 px-2 py-0.5 rounded">PV: 7</span>
               </div>
-              <div className="w-full bg-black/10 h-1.5 rounded-full mt-4">
-                <div 
-                  className={`h-full rounded-full transition-all duration-1000 ${accent.bg}`}
-                  style={{ width: `${(completedChallengeDays.length / TOTAL_PLAN_DAYS) * 100}%` }}
+              <div className="w-full bg-black/10 h-1.5 rounded-full mt-4 overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(completedChallengeDays.length / TOTAL_PLAN_DAYS) * 100}%` }}
+                  transition={{ duration: 1.5, ease: "backOut" }}
+                  className={`h-full rounded-full ${accent.bg}`}
                 />
               </div>
               <p className="text-[9px] font-bold uppercase tracking-widest opacity-40 text-right">
@@ -897,9 +1114,10 @@ export default function App() {
         )}
 
         {/* Set Tabs or Challenge Days */}
-        {!isWeakRevision && (
-          <div className="flex gap-2 overflow-x-auto pb-4 mb-4 no-scrollbar">
-            {isChallengeMode ? (
+        {!isWeakRevision && mode !== 'comp' && (
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+              {isChallengeMode ? (
               Array.from({ length: TOTAL_PLAN_DAYS }).map((_, i) => {
                 const day = i + 1;
                 const isCompleted = completedChallengeDays.includes(day);
@@ -920,24 +1138,87 @@ export default function App() {
                 );
               })
             ) : (
-              Array.from({ length: totalSets }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setCurSet(i); setAnswered({}); setShowResults(false); }}
-                  className={`px-6 py-2 rounded-xl font-black text-[10px] tracking-widest whitespace-nowrap transition-all border ${
-                    curSet === i 
-                      ? `${accent.bg} ${accent.border} text-white shadow-lg ${accent.shadow}` 
-                      : `${theme.secondary} ${theme.border} opacity-50`
-                  }`}
-                >
-                  SET {i + 1}
-                </button>
-              ))
+              Array.from({ length: totalSets }).map((_, i) => {
+                const isCompleted = completedSets[cat].includes(i);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => { setCurSet(i); setAnswered({}); setShowResults(false); }}
+                    className={`px-6 py-2 rounded-xl font-black text-[10px] tracking-widest whitespace-nowrap transition-all border flex items-center gap-2 ${
+                      curSet === i 
+                        ? `${accent.bg} ${accent.border} text-white shadow-lg ${accent.shadow}` 
+                        : isCompleted
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500/80'
+                          : `${theme.secondary} ${theme.border} opacity-50`
+                    }`}
+                  >
+                    SET {i + 1}
+                    {isCompleted && <CheckCircle2 size={12} className={curSet === i ? 'text-white' : 'text-emerald-500'} />}
+                  </button>
+                );
+              })
             )}
+            </div>
           </div>
         )}
 
-        {mode === 'learn' && !isWeakRevision && !isChallengeMode ? (
+        {mode === 'comp' ? (
+          <div className="mt-4">
+            {!showCompResults && (
+              <div className={`mb-10 p-6 rounded-[2.5rem] border ${theme.border} ${theme.card} shadow-2xl`}>
+                <div className="flex justify-between items-center mb-8">
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${accent.text}`}>Session Config</span>
+                  <Sparkles size={18} className="opacity-30" />
+                </div>
+
+                <div className="space-y-6">
+                   <div className="space-y-3">
+                      <p className="text-sm font-black italic tracking-tighter uppercase">1. Choose Session Intensity</p>
+                      <div className={`flex p-1 rounded-2xl shadow-inner ${theme.secondary}`}>
+                        <button 
+                          onClick={() => setCompSessionMode('quiz')}
+                          className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${compSessionMode === 'quiz' ? `${accent.bg} text-white shadow-lg` : 'opacity-40 text-slate-500'}`}
+                        >
+                          QUIZ (INSTANT ANSWERS)
+                        </button>
+                        <button 
+                          onClick={() => setCompSessionMode('exam')}
+                          className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${compSessionMode === 'exam' ? 'bg-slate-700 text-white' : 'opacity-40 text-slate-500'}`}
+                        >
+                          EXAM (RESULTS AT END)
+                        </button>
+                      </div>
+                   </div>
+
+                   {loadingComp ? (
+                     <div className="py-10 flex flex-col items-center gap-4">
+                        <BrainCircuit size={40} className="animate-spin opacity-20" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Syncing 2026 Shift Patterns...</p>
+                     </div>
+                   ) : compData && (
+                     <motion.button 
+                       initial={{ scale: 0.95, opacity: 0 }}
+                       animate={{ scale: 1, opacity: 1 }}
+                       onClick={() => setShowCompResults(true)}
+                       className={`w-full py-6 rounded-[2rem] font-black text-white tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] ${accent.bg} ${accent.shadow}`}
+                     >
+                       START DAILY PRACTICE
+                     </motion.button>
+                   )}
+                </div>
+              </div>
+            )}
+            {showCompResults && compData && (
+              <ComprehensionView 
+                data={compData}
+                theme={theme}
+                accent={accent}
+                sessionMode={compSessionMode}
+                onFinish={() => {}}
+              />
+            )}
+          </div>
+        ) : mode === 'learn' && !isWeakRevision && !isChallengeMode ? (
           <div className="flex flex-col gap-4 mt-2">
             {activeBatch.map((item, idx) => {
               const globalSerial = idx + 1 + (curSet * SET_SIZE);
@@ -1048,6 +1329,7 @@ export default function App() {
             )}
           </div>
         )}
+        </motion.div>
       </main>
 
       <style>{`
