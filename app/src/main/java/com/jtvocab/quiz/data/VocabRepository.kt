@@ -44,33 +44,69 @@ object VocabRepository {
     val dailyPQRS = listOf(
         PQRSQuestion(
             id = "pq1",
-            s1 = "S1: The rise of automation has sparked debate.",
-            s6 = "S6: Ultimately, a nuanced approach is required.",
+            s1 = "The expansion of the tech industry has been significant.",
+            s6 = "This trend is likely to continue for the foreseeable future.",
             sentences = listOf(
-                "P: AI can increase efficiency universally.",
-                "Q: Critics warn of job displacement.",
-                "R: This tension lies at the heart of tech.",
-                "S: Lack of transparency complicates trust."
+                "P: Silicon Valley remains the epicenter of innovation.",
+                "Q: Emerging markets are now challenging this dominance.",
+                "R: Cloud computing has enabled global scalability.",
+                "S: Remote work has further decentralized the workforce."
             ),
-            correctSequence = "PQSR",
-            explanation = "Logical flow from benefits to critics to trust issues."
+            correctSequence = "RPSQ",
+            explanation = "Logical flow from infrastructure (Cloud) to center (Silicon Valley) to decentralized shifts (Emerging/Remote)."
         ),
         PQRSQuestion(
             id = "pq2",
-            s1 = "S1: Space exploration has always fascinated humanity.",
-            s6 = "S6: The final frontier remains our greatest challenge.",
+            s1 = "Quantum mechanics and general relativity are both well-tested.",
+            s6 = "The quest for a 'Theory of Everything' remains the holy grail of physics.",
             sentences = listOf(
-                "P: Mars has become the primary target for colonization.",
-                "Q: Technological hurdles still block the path.",
-                "R: Private companies are now leading the charge.",
-                "S: Resources are being diverted from Earthly needs."
+                "P: However, they are mathematically incompatible at extreme scales.",
+                "Q: This conflict arises in the study of black hole singularities.",
+                "R: String theory has been proposed as a potential bridge.",
+                "S: Experimental verification remains elusive despite decades of research."
             ),
-            correctSequence = "RPQS",
-            explanation = "Discusses the shift to private companies and their goals."
+            correctSequence = "PQRS",
+            explanation = "Discusses the incompatibility, the specific conflict point, and the proposed (but unverified) solution."
         ),
-        PQRSQuestion(id = "pq3", s1 = "S1: History", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA"),
-        PQRSQuestion(id = "pq4", s1 = "S1: Science", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA"),
-        PQRSQuestion(id = "pq5", s1 = "S1: Arts", s6 = "S6: End", sentences = listOf("P: A", "Q: B", "R: C", "S: D"), correctSequence = "PQRS", explanation = "NA")
+        PQRSQuestion(
+            id = "pq3",
+            s1 = "The Industrial Revolution marked a major turning point in history.",
+            s6 = "The era set the stage for the modern consumer-driven economy.",
+            sentences = listOf(
+                "P: Steam power replaced manual labor in textile mills.",
+                "Q: This led to mass migration from rural areas to urban centers.",
+                "R: Living conditions in these new cities were initially abysmal.",
+                "S: Legislative reforms eventually mitigated the worst impacts."
+            ),
+            correctSequence = "PQRS",
+            explanation = "Chronological sequence from technology to migration to social impact and finally reform."
+        ),
+        PQRSQuestion(
+            id = "pq4",
+            s1 = "A substantial body of literature exists on macro-economic stability.",
+            s6 = "Continuous monitoring by central banks is thus indispensable.",
+            sentences = listOf(
+                "P: Fiscal policy and monetary mechanisms must work in tandem.",
+                "Q: Inflationary pressures can destabilize even the strongest currencies.",
+                "R: Market volatility often stems from unpredictable geopolitical events.",
+                "S: Proactive interventions are required to maintain equilibrium."
+            ),
+            correctSequence = "RQPS",
+            explanation = "Starts with causes of instability and moves to the required policy coordination and intervention."
+        ),
+        PQRSQuestion(
+            id = "pq5",
+            s1 = "Ecological conservation has shifted from local to global focus.",
+            s6 = "The survival of biodiversity depends on this unified commitment.",
+            sentences = listOf(
+                "P: International treaties now dictate biodiversity standards.",
+                "Q: Sovereign nations often resist these outside mandates.",
+                "R: Economic development is frequently prioritized over habitat preservation.",
+                "S: Yet, the shared nature of climate risks forces cooperation."
+            ),
+            correctSequence = "PQRS",
+            explanation = "Outlines the global shift, the resistance encountered, the conflict with economy, and the ultimate necessity of cooperation."
+        )
     )
 
     val dailyCloze = listOf(

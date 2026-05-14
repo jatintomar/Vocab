@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -609,7 +611,7 @@ fun QuizSection(viewModel: VocabViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        itemsIndexed(quizItems, key = { _, q -> q.item.id }) { index, quiz ->
+        itemsIndexed(quizItems, key = { _, q -> q.item.id + q.isCorrect }) { index, quiz ->
             QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
@@ -832,25 +834,36 @@ fun CompSection(viewModel: VocabViewModel) {
         } else {
             // Navigation Bar for Comp types
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     listOf("PQRS", "CLOZE", "RC").forEach { type ->
                         val isSelected = compType == type
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (isSelected) 
+                                        Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
+                                    else 
+                                        SolidColor(MaterialTheme.colorScheme.surface.copy(0.5f))
+                                )
                                 .clickable { viewModel.setCompType(type) }
-                                .padding(vertical = 10.dp),
+                                .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(type, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
+                            Text(
+                                type, 
+                                fontWeight = FontWeight.Black, 
+                                fontSize = 11.sp, 
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface.copy(0.5f),
+                                letterSpacing = 1.sp
+                            )
                         }
                     }
                 }
@@ -859,13 +872,16 @@ fun CompSection(viewModel: VocabViewModel) {
                 
                 IconButton(
                     onClick = { viewModel.generateComp() },
-                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(0.1f))
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(0.1f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "AI Generate",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -972,43 +988,55 @@ fun ClozeSingleView(cloze: ClozeQuestion, index: Int, total: Int, onPrev: () -> 
 
 @Composable
 fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.1f))
             ) {
                 Column(Modifier.padding(24.dp)) {
-                    Text("READING COMPREHENSION", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-                    Spacer(Modifier.height(12.dp))
-                    Text(rc.passage, fontSize = 14.sp, lineHeight = 20.sp, color = MaterialTheme.colorScheme.onSurface)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.secondary.copy(0.1f))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text("LEVEL: LAST MILE", fontWeight = FontWeight.Black, fontSize = 9.sp, color = MaterialTheme.colorScheme.secondary)
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(rc.passage, fontSize = 15.sp, lineHeight = 24.sp, color = MaterialTheme.colorScheme.onSurface)
                     
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(32.dp))
                     rc.questions.forEachIndexed { i, q ->
-                        Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Spacer(Modifier.height(12.dp))
-                        q.options.forEach { option ->
-                            Surface(
-                                onClick = {},
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f)),
-                                color = Color.Transparent
-                            ) {
-                                Text(option, modifier = Modifier.padding(16.dp), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                            Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Black, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Spacer(Modifier.height(16.dp))
+                            q.options.forEach { option ->
+                                var isSelected by remember { mutableStateOf(false) }
+                                Surface(
+                                    onClick = { isSelected = !isSelected },
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    shape = RoundedCornerShape(20.dp),
+                                    border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.05f)),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.05f) else Color.Transparent
+                                ) {
+                                    Text(option, modifier = Modifier.padding(18.dp), fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                }
                             }
                         }
-                        Spacer(Modifier.height(16.dp))
                     }
                     
                     Button(
                         onClick = {},
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Text("FINISH RC", fontWeight = FontWeight.Black)
+                        Text("SUBMIT PASSAGE", fontWeight = FontWeight.Black)
                     }
                 }
             }
@@ -1016,41 +1044,58 @@ fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ClozeCard(cloze: ClozeQuestion) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(0.1f))
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Text(cloze.passage, fontSize = 15.sp, lineHeight = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+        Column(Modifier.padding(24.dp)) {
+            Text(cloze.passage, fontSize = 16.sp, lineHeight = 26.sp, color = MaterialTheme.colorScheme.onSurface)
             
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
             
-            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
                 cloze.blanks.forEach { blank ->
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                                    Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
+                                ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(blank.index.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                                Text(blank.index.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 14.sp)
                             }
-                            Spacer(Modifier.width(12.dp))
-                            Text("SELECT WORD FOR BLANK (${blank.index})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
+                            Spacer(Modifier.width(16.dp))
+                            Text("SELECT WORD FOR BLANK (${blank.index})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), letterSpacing = 1.sp)
                         }
                         
-                        blank.options.forEach { option ->
-                            Surface(
-                                onClick = {},
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                            ) {
-                                Text(option, modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            mainAxisSpacing = 8.dp,
+                            crossAxisSpacing = 8.dp
+                        ) {
+                            blank.options.forEach { option ->
+                                var isSelected by remember { mutableStateOf(false) }
+                                Surface(
+                                    onClick = { isSelected = !isSelected },
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(0.3f),
+                                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(0.1f)),
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        option, 
+                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp), 
+                                        fontWeight = FontWeight.Black, 
+                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                        fontSize = 13.sp
+                                    )
+                                }
                             }
                         }
                     }
@@ -1062,20 +1107,21 @@ fun ClozeCard(cloze: ClozeQuestion) {
 
 @Composable
 fun PQRSCard(pqrs: PQRSQuestion) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // S1 Label
         pqrs.s1?.let { s1Text ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(0.3f))
-                    .padding(16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f), RoundedCornerShape(24.dp))
+                    .padding(20.dp)
             ) {
                 Column {
-                    Text("FIXED START (S1)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                    Spacer(Modifier.height(4.dp))
-                    Text(s1Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("STARTING ANCHOR (S1)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(s1Text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, lineHeight = 24.sp)
                 }
             }
         }
@@ -1083,20 +1129,31 @@ fun PQRSCard(pqrs: PQRSQuestion) {
         // P, Q, R, S Items
         pqrs.sentences.forEachIndexed { i, sentence ->
             val label = when(i) { 0 -> "P"; 1 -> "Q"; 2 -> "R"; else -> "S" }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(0.4f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
             ) {
-                Box(
-                    modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Text(label, color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    Box(
+                        modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary.copy(0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(label, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        sentence.removePrefix("$label: ").removePrefix(label).removePrefix(": ").trim(), 
+                        fontSize = 15.sp, 
+                        color = MaterialTheme.colorScheme.onSurface, 
+                        lineHeight = 24.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
-                Spacer(Modifier.width(16.dp))
-                Text(sentence.removePrefix("$label: "), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface, lineHeight = 22.sp)
             }
         }
 
@@ -1105,31 +1162,43 @@ fun PQRSCard(pqrs: PQRSQuestion) {
              Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(0.3f))
-                    .padding(16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f), RoundedCornerShape(24.dp))
+                    .padding(20.dp)
             ) {
                 Column {
-                    Text("FIXED END (S6)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                    Spacer(Modifier.height(4.dp))
-                    Text(s6Text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("ENDING ANCHOR (S6)", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(s6Text, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, lineHeight = 24.sp)
                 }
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
+        
+        Text("CHOOSE CORRECT SEQUENCE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.padding(start = 8.dp))
         
         // Answer Chips at bottom
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf("PQRS", "PSQR").forEach { seq ->
+            val options = listOf(pqrs.correctSequence, "PSQR", "RQPS", "QPSR").distinct().take(3)
+            options.forEach { seq ->
+                var isSelected by remember { mutableStateOf(false) }
                 Surface(
-                    onClick = {},
+                    onClick = { isSelected = !isSelected },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(0.1f))
                 ) {
-                    Text(seq, modifier = Modifier.padding(16.dp), textAlign = TextAlign.Center, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        seq, 
+                        modifier = Modifier.padding(vertical = 16.dp), 
+                        textAlign = TextAlign.Center, 
+                        fontWeight = FontWeight.Black, 
+                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                        fontSize = 13.sp
+                    )
                 }
             }
         }

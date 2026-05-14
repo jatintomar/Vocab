@@ -55,8 +55,10 @@ object AndroidGeminiService {
     suspend fun generatePQRS(): List<com.jtvocab.quiz.model.PQRSQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 5 High-Level Parajumble (PQRS) questions for SSC CGL Tier 2.
-            Include S1 (Start) and S6 (End) for 3 of them, others can be just PQRS.
+            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 (Last Mile Difficulty).
+            Topic: Scientific breakthroughs, Philosophy, Global Economics, or High-level Literature.
+            Include S1 (Fixed Start) and S6 (Fixed End) for all.
+            Sentences P, Q, R, S must be complex and logically dense.
             Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4 strings labeled P:, Q:, R:, S:), "correctSequence" (e.g. "PRSQ"), "explanation".
         """.trimIndent()
         try {
@@ -68,7 +70,7 @@ object AndroidGeminiService {
                 val sentencesArr = obj.getJSONArray("sentences")
                 val sentences = List(sentencesArr.length()) { sentencesArr.getString(it) }
                 list.add(com.jtvocab.quiz.model.PQRSQuestion(
-                    id = obj.optString("id", i.toString()),
+                    id = obj.optString("id", UUID.randomUUID().toString()),
                     s1 = obj.optString("s1", null),
                     s6 = obj.optString("s6", null),
                     sentences = sentences,
@@ -83,7 +85,8 @@ object AndroidGeminiService {
     suspend fun generateCloze(): List<com.jtvocab.quiz.model.ClozeQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 2 Cloze Test passages (100-150 words each) for SSC CGL.
+            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2.
+            Difficulty: High (Extreme vocabulary like 'obfuscate', 'recalcitrant', 'infinitesimal').
             Each passage should have 5 blanks.
             Return ONLY a JSON array of objects with keys: "id", "passage" (with (1), (2), etc. labels), "blanks" (array of objects with "index", "options", "answer", "explanation").
         """.trimIndent()
@@ -106,7 +109,7 @@ object AndroidGeminiService {
                     ))
                 }
                 list.add(com.jtvocab.quiz.model.ClozeQuestion(
-                    id = obj.optString("id", i.toString()),
+                    id = obj.optString("id", UUID.randomUUID().toString()),
                     passage = obj.getString("passage"),
                     blanks = blanks
                 ))
@@ -118,13 +121,15 @@ object AndroidGeminiService {
     suspend fun generateRC(): com.jtvocab.quiz.model.RCQuestion? = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext null
         val prompt = """
-            Generate 1 Challenging Reading Comprehension passage for SSC CGL Tier 2.
-            Include 5 questions with options.
+            Generate 1 Full-Length High Difficulty Reading Comprehension passage (300 words+) for SSC CGL Tier 2.
+            Topic: Geopolitics, Quantum Physics simplified, or History of Enlightenment.
+            Include 5 complex questions requiring deep inference.
             Return ONLY a JSON object with keys: "id", "passage", "questions" (array of objects with "q", "options", "a", "explanation").
         """.trimIndent()
         try {
             val response = model.generateContent(prompt)
-            val obj = JSONObject(response.text ?: "{}")
+            val cleanedResponse = response.text?.replace("```json", "")?.replace("```", "")?.trim() ?: "{}"
+            val obj = JSONObject(cleanedResponse)
             val qsArr = obj.getJSONArray("questions")
             val qs = mutableListOf<com.jtvocab.quiz.model.RCQuestion.RCSubQuestion>()
             for (i in 0 until qsArr.length()) {
@@ -138,7 +143,7 @@ object AndroidGeminiService {
                 ))
             }
             com.jtvocab.quiz.model.RCQuestion(
-                id = obj.optString("id", "rc1"),
+                id = obj.optString("id", UUID.randomUUID().toString()),
                 passage = obj.getString("passage"),
                 questions = qs
             )
