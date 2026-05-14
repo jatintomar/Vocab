@@ -127,6 +127,9 @@ class VocabViewModel : ViewModel() {
         _isChallengeMode.value = enabled
         if (enabled) {
             startChallengeQuiz(_challengeDay.value)
+        } else {
+            _currentQuizBatch.value = emptyList()
+            _score.value = 0
         }
     }
 
@@ -156,7 +159,7 @@ class VocabViewModel : ViewModel() {
             }
         }
 
-        _currentQuizBatch.value = combinedItems.map { item ->
+        _currentQuizBatch.value = combinedItems.sortedBy { it.cat }.map { item ->
             val allAnswers = when(item.cat) {
                 "ow" -> VocabRepository.ows
                 "sy" -> VocabRepository.synonyms
@@ -173,16 +176,10 @@ class VocabViewModel : ViewModel() {
     }
 
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {
-        _currentSetIndex.value = setIndex
+        _currentSetIndex.value = if (isWeakMode) -1 else setIndex
         _score.value = 0
         val items = if (isWeakMode) {
-            when(cat) {
-                "ow" -> _state.value.weakListOW
-                "sy" -> _state.value.weakListSY
-                "id" -> _state.value.weakListID
-                "ph" -> _state.value.weakListPH
-                else -> emptyList()
-            }
+            (_state.value.weakListOW + _state.value.weakListSY + _state.value.weakListID + _state.value.weakListPH).shuffled()
         } else {
             val size = when(cat) {
                 "ow" -> 50
@@ -195,7 +192,7 @@ class VocabViewModel : ViewModel() {
         }
 
         _currentQuizBatch.value = items.map { item ->
-            val allAnswers = when(cat) {
+            val allAnswers = when(item.cat) {
                 "ow" -> VocabRepository.ows
                 "sy" -> VocabRepository.synonyms
                 "ph" -> VocabRepository.phrasal
@@ -208,6 +205,15 @@ class VocabViewModel : ViewModel() {
             val options = (distractors + item.a).shuffled()
             QuizItem(item, options)
         }
+    }
+
+    fun clearWeakList() {
+        _state.value = _state.value.copy(
+            weakListOW = emptyList(),
+            weakListSY = emptyList(),
+            weakListID = emptyList(),
+            weakListPH = emptyList()
+        )
     }
 
     fun submitAnswer(quizIndex: Int, answer: String) {

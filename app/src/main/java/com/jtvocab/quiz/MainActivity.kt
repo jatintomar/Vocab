@@ -372,13 +372,17 @@ fun DashboardContent(
 
         Spacer(Modifier.height(32.dp))
 
+        val weakCount = state.weakListOW.size + state.weakListSY.size + state.weakListID.size + state.weakListPH.size
         DrawerItem(
             icon = Icons.Default.Info,
             title = "WEAK LIST",
-            subtitle = "0 terms to revise",
+            subtitle = "$weakCount terms to revise",
             isSelected = false,
             color = MaterialTheme.colorScheme.error,
-            onClick = {}
+            onClick = { 
+                viewModel.startQuiz("weak", -1, isWeakMode = true)
+                onModeSelect("quiz") 
+            }
         )
 
         Spacer(Modifier.weight(1f))
@@ -659,7 +663,8 @@ fun QuizSection(viewModel: VocabViewModel) {
                     .padding(vertical = 12.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = 20.dp, vertical = 12.dp)
+                    .clickable { viewModel.setChallengeMode(false) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -695,6 +700,23 @@ fun QuizSection(viewModel: VocabViewModel) {
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
             itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
+                if (index == 0 || quizItems[index - 1].item.cat != quiz.item.cat) {
+                    val label = when(quiz.item.cat) {
+                        "ow" -> "ONE WORD SUBSTITUTION"
+                        "sy" -> "SYNONYMS"
+                        "id" -> "IDIOMS"
+                        "ph" -> "PHRASAL VERBS"
+                        else -> "VOCABULARY"
+                    }
+                    Text(
+                        label,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 2.sp
+                    )
+                }
                 QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
             }
             
@@ -721,6 +743,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
     val insight by viewModel.currentInsight
     val loadingAI by viewModel.loadingAI
     val isShowingThisInsight = insight?.word == quiz.item.w
+    var showHint by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
@@ -738,10 +761,26 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     Spacer(Modifier.width(4.dp))
                     Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 }
-                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Default.Info, 
+                    null, 
+                    tint = if (showHint) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary, 
+                    modifier = Modifier.size(16.dp).clickable { showHint = !showHint }
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            if (showHint) {
+                Text(
+                    "Hint: ${quiz.item.h}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+            }
 
             Text(
                 quiz.item.w,
@@ -855,6 +894,23 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         itemsIndexed(items = quizItems) { index, quizItem ->
+            if (index == 0 || quizItems[index - 1].item.cat != quizItem.item.cat) {
+                val label = when(quizItem.item.cat) {
+                    "ow" -> "ONE WORD SUBSTITUTION"
+                    "sy" -> "SYNONYMS"
+                    "id" -> "IDIOMS"
+                    "ph" -> "PHRASAL VERBS"
+                    else -> "VOCABULARY"
+                }
+                Text(
+                    label,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary,
+                    letterSpacing = 2.sp
+                )
+            }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -876,10 +932,17 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
                         Text("#${index + 1}", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(quizItem.item.w, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 14.sp)
-                        Spacer(Modifier.height(2.dp))
-                        Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
+                        if (quizItem.item.cat == "id") {
+                            Text(quizItem.item.w, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                            Text(quizItem.item.a, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f), lineHeight = 14.sp)
+                            Spacer(Modifier.height(2.dp))
+                            Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
+                        } else {
+                            Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(quizItem.item.w, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 14.sp)
+                            Spacer(Modifier.height(2.dp))
+                            Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
+                        }
                     }
                 }
             }
