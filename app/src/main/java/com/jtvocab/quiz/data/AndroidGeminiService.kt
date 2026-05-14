@@ -49,7 +49,13 @@ object AndroidGeminiService {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            // Fallback for native app
+            WordInsight(
+                word = word,
+                context = "Commonly used in competitive exams to test vocabulary depth.",
+                mnemonic = "Connect this with a similar sounding familiar word for easier recall.",
+                synonyms = emptyList()
+            )
         }
     }
 

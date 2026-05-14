@@ -62,7 +62,7 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
         "Deepsea" -> Color(0xFF030712)
         "Evergreen" -> Color(0xFF064E3B)
         "Parchment" -> Color(0xFFFDFCF2)
-        "Nordic" -> Color(0xFF030712)
+        "Nordic" -> Color(0xFFE5E7EB)
         else -> Color(0xFF030712)
     }
 
@@ -70,13 +70,13 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
         "Deepsea" -> Color(0xFF111827)
         "Evergreen" -> Color(0xFF065F46)
         "Parchment" -> Color(0xFFF5F5DC)
-        "Nordic" -> Color(0xFF111827)
+        "Nordic" -> Color(0xFFFFFFFF)
         else -> Color(0xFF111827)
     }
 
-    val isParchment = state.theme == "Parchment"
-    val onSurface = if (isParchment) Color(0xFF1C1917) else Color.White
-    val onBackground = if (isParchment) Color(0xFF1C1917) else Color.White
+    val isParchment = state.theme == "Parchment" || state.theme == "Nordic"
+    val onSurface = if (isParchment) Color(0xFF1F2937) else Color.White
+    val onBackground = if (isParchment) Color(0xFF111827) else Color.White
 
     val colorScheme = if (isParchment) {
         lightColorScheme(
@@ -636,6 +636,8 @@ fun CategoryTabs(current: String, onSelect: (String) -> Unit) {
 @Composable
 fun QuizSection(viewModel: VocabViewModel) {
     val quizItems by viewModel.currentQuizBatch
+    val quizCount = quizItems.count { it.isAnswered }
+    val totalCount = quizItems.size
     
     if (quizItems.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -643,13 +645,64 @@ fun QuizSection(viewModel: VocabViewModel) {
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(bottom = 32.dp)
-    ) {
-        itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
-            QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (quizItems.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("SESSION MASTERY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                        Text("$quizCount/$totalCount", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = if (totalCount > 0) quizCount.toFloat() / totalCount else 0f,
+                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                    )
+                }
+                
+                Spacer(Modifier.width(24.dp))
+                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                Spacer(Modifier.width(24.dp))
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val score by viewModel.score
+                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text(score.toString(), fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 32.dp)
+        ) {
+            itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
+                QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
+            }
+            
+            if (quizItems.isNotEmpty()) {
+                item {
+                    Button(
+                        onClick = { viewModel.setChallengeMode(false) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 16.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("FINISH SESSION", fontWeight = FontWeight.Black)
+                    }
+                }
+            }
         }
     }
 }
@@ -685,15 +738,15 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
 
             Text(
                 quiz.item.w,
-                fontSize = 28.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                lineHeight = 36.sp
+                lineHeight = 28.sp
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             quiz.options.forEach { option ->
                 val isCorrect = option == quiz.item.a
@@ -709,54 +762,22 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     onClick = { onAnswer(option) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    shape = RoundedCornerShape(20.dp),
+                        .padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = Color.Transparent,
                     border = BorderStroke(1.dp, borderColor)
                 ) {
                     Text(
                         option,
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(16.dp),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         color = if (quiz.isAnswered && isCorrect) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("SESSION MASTERY", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                        Text("0/50", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    LinearProgressIndicator(
-                        progress = 0f,
-                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.onSurface.copy(0.1f)
-                    )
-                }
-                
-                Spacer(Modifier.width(24.dp))
-                Divider(modifier = Modifier.height(24.dp).width(1.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                Spacer(Modifier.width(24.dp))
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                    Text("0", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                }
-            }
+            Spacer(Modifier.height(16.dp))
  
             Spacer(Modifier.height(16.dp))
 
@@ -814,32 +835,33 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
         }
     }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(items = quizItems) { quizItem ->
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
+        itemsIndexed(items = quizItems) { index, quizItem ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
             ) {
                 Row(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(quizItem.item.a.take(1).uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(quizItem.item.w, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 16.sp)
-                        Spacer(Modifier.height(4.dp))
-                        Text(quizItem.item.h, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
+                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                        Text(quizItem.item.w, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 15.sp)
+                        Spacer(Modifier.height(2.dp))
+                        Text(quizItem.item.h, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
                     }
                 }
             }
@@ -1092,19 +1114,56 @@ fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
                     
                     Spacer(Modifier.height(32.dp))
                     rc.questions.forEachIndexed { i, q ->
+                        var selectedOption by remember { mutableStateOf<String?>(null) }
+                        var isAnswered by remember { mutableStateOf(false) }
+
                         Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                            Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Black, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Spacer(Modifier.height(16.dp))
+                            Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Spacer(Modifier.height(12.dp))
                             q.options.forEach { option ->
-                                var isSelected by remember { mutableStateOf(false) }
+                                val isSelected = selectedOption == option
+                                val isCorrect = option == q.a
+                                
+                                val borderColor = when {
+                                    isAnswered && isCorrect -> Color(0xFF10B981)
+                                    isSelected && !isCorrect -> Color(0xFFEF4444)
+                                    isSelected -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface.copy(0.05f)
+                                }
+
                                 Surface(
-                                    onClick = { isSelected = !isSelected },
+                                    onClick = { 
+                                        if (!isAnswered) {
+                                            selectedOption = option
+                                            isAnswered = true
+                                        }
+                                    },
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    shape = RoundedCornerShape(20.dp),
-                                    border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(0.05f)),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, borderColor),
                                     color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.05f) else Color.Transparent
                                 ) {
-                                    Text(option, modifier = Modifier.padding(18.dp), fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(
+                                        option, 
+                                        modifier = Modifier.padding(16.dp), 
+                                        fontSize = 13.sp, 
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, 
+                                        color = when {
+                                            isAnswered && isCorrect -> Color(0xFF10B981)
+                                            isSelected && !isCorrect -> Color(0xFFEF4444)
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            AnimatedVisibility(visible = isAnswered) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f))
+                                ) {
+                                    Text(q.explanation, modifier = Modifier.padding(12.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
                                 }
                             }
                         }
@@ -1138,44 +1197,75 @@ fun ClozeCard(cloze: ClozeQuestion) {
             
             Spacer(Modifier.height(40.dp))
             
-            Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 cloze.blanks.forEach { blank ->
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    var selectedOption by remember { mutableStateOf<String?>(null) }
+                    var isAnswered by remember { mutableStateOf(false) }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier.size(36.dp).clip(CircleShape).background(
+                                modifier = Modifier.size(32.dp).clip(CircleShape).background(
                                     Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary))
                                 ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(blank.index.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                                Text(blank.index.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
                             }
-                            Spacer(Modifier.width(16.dp))
-                            Text("SELECT WORD FOR BLANK (${blank.index})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), letterSpacing = 1.sp)
+                            Spacer(Modifier.width(12.dp))
+                            Text("SELECT WORD FOR BLANK (${blank.index})", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), letterSpacing = 1.sp)
                         }
                         
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             blank.options.forEach { option ->
-                                var isSelected by remember { mutableStateOf(false) }
+                                val isSelected = selectedOption == option
+                                val isCorrect = option == blank.answer
+                                
+                                val borderColor = when {
+                                    isAnswered && isCorrect -> Color(0xFF10B981)
+                                    isSelected && !isCorrect -> Color(0xFFEF4444)
+                                    isSelected -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                                }
+
                                 Surface(
-                                    onClick = { isSelected = !isSelected },
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface.copy(0.3f),
-                                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(0.1f)),
-                                    modifier = Modifier.padding(vertical = 4.dp)
+                                    onClick = { 
+                                        if (!isAnswered) {
+                                            selectedOption = option
+                                            isAnswered = true
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.1f) else MaterialTheme.colorScheme.surface.copy(0.3f),
+                                    border = BorderStroke(1.dp, borderColor),
+                                    modifier = Modifier.padding(vertical = 2.dp)
                                 ) {
                                     Text(
                                         option, 
-                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp), 
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), 
                                         fontWeight = FontWeight.Black, 
-                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        fontSize = 13.sp
+                                        color = when {
+                                            isAnswered && isCorrect -> Color(0xFF10B981)
+                                            isSelected && !isCorrect -> Color(0xFFEF4444)
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        },
+                                        fontSize = 12.sp
                                     )
                                 }
+                            }
+                        }
+
+                        AnimatedVisibility(visible = isAnswered) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f))
+                            ) {
+                                Text(blank.explanation, modifier = Modifier.padding(10.dp), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
                             }
                         }
                     }

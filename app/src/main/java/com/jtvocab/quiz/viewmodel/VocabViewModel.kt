@@ -37,6 +37,9 @@ class VocabViewModel : ViewModel() {
     private val _currentClozeIndex = mutableStateOf(0)
     val currentClozeIndex: State<Int> = _currentClozeIndex
 
+    private val _score = mutableStateOf(0)
+    val score: State<Int> = _score
+
     fun setCompType(type: String) { _currentCompType.value = type }
     fun nextPQRS() { if (_currentPQRSIndex.value < dailyPQRS.value.size - 1) _currentPQRSIndex.value++ }
     fun prevPQRS() { if (_currentPQRSIndex.value > 0) _currentPQRSIndex.value-- }
@@ -169,6 +172,7 @@ class VocabViewModel : ViewModel() {
 
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {
         _currentSetIndex.value = setIndex
+        _score.value = 0
         val items = if (isWeakMode) {
             when(cat) {
                 "ow" -> _state.value.weakListOW
@@ -212,6 +216,13 @@ class VocabViewModel : ViewModel() {
             selectedOption = answer
         )
         _currentQuizBatch.value = currentBatch
+
+        if (answer == quizItem.item.a) {
+            _score.value += 1
+            if (_score.value % 10 == 0) {
+                _state.value = _state.value.copy(streak = _state.value.streak + 1)
+            }
+        }
 
         if (answer != quizItem.item.a) {
             addToWeakList(quizItem.item)
