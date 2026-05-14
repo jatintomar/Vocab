@@ -217,10 +217,11 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     }
                 }
                 
-                Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
-                    when (mode) {
-                        "quiz" -> QuizSection(viewModel)
-                        "learn" -> LearnSection(viewModel, cat)
+                    Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
+                        when (mode) {
+                            "quiz" -> QuizSection(viewModel)
+                            "learn" -> LearnSection(viewModel, cat)
+                        }
                     }
                 }
             }
@@ -362,6 +363,7 @@ fun StreakBadge(streak: Int) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardContent(
     state: AppState,
@@ -861,6 +863,7 @@ fun QuizSection(viewModel: VocabViewModel) {
 
 // ChallengeCard removed as requested
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
     val insight by viewModel.currentInsight
@@ -1067,6 +1070,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel) {
     val insight by viewModel.currentInsight
