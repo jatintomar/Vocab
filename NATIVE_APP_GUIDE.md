@@ -1,44 +1,33 @@
-# JStudio Native App Guide: JT VOCAB QUIZ
+# Build Guide for JT VOCAB QUIZ (Mobile)
 
-This guide explains how to build the **JT VOCAB QUIZ** application as a standalone native Android app using **Kotlin** and **Jetpack Compose** directly on your phone using **JStudio**.
+To fix the GitHub errors and build your app natively, follow these steps:
 
-## Step 1: Set up JStudio
-1. Download and install **JStudio** from the Play Store or official source.
-2. Open JStudio and create a **New Project**.
-3. Select **Kotlin/Compose** template (or a standard Kotlin project if you plan to add Compose manually).
-4. **Project Settings**:
-   - **Name**: JT VOCAB QUIZ
-   - **Package Name**: `com.jtvocab.quiz`
-   - **Minimum SDK**: 24
+## 1. Export these files to GitHub
+The "No file matches" error on GitHub means you haven't pushed the Android source code yet.
+1. Tap the **Sync/GitHub** menu in AI Studio.
+2. Select **Export to GitHub** or **Push**. This will upload the `app`, `build.gradle`, and `.github` folders I just created.
 
-## Step 2: Configure build.gradle
-In JStudio, open your `app/build.gradle` (or `build.gradle.kts`) and add the necessary Jetpack Compose dependencies:
-```kotlin
-dependencies {
-    implementation("androidx.compose.material3:material3:1.2.0")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-}
-```
+## 2. GitHub Actions (The Build)
+I have created a new file at `.github/workflows/android.yml`. This workflow:
+- Automatically installs Gradle (fixes the "gradlew" error).
+- Uses **JDK 17** (required for modern Android apps).
+- Generates an APK for you in the cloud.
 
-## Step 3: Copy Source Files
-JStudio allows you to create files and folders. Copy the code from the following files in this project into your JStudio project:
+**How to find your APK:**
+1. Open your GitHub repository in your browser.
+2. Tap the **Actions** tab.
+3. Tap on the latest **"Android CI"** run.
+4. Once finished, scroll down to **"Artifacts"** and tap the linked zip file to download your app.
 
-1. **`MainActivity.kt`**: Place in `java/com/jtvocab/quiz/`
-2. **`VocabViewModel.kt`**: Place in `java/com/jtvocab/quiz/viewmodel/`
-3. **`VocabRepository.kt`**: Place in `java/com/jtvocab/quiz/data/`
-4. **`Models.kt`**: Place in `java/com/jtvocab/quiz/model/`
+## 3. Building in JStudio (Manual)
+If you prefer building inside the JStudio app:
+1. **Clone** your GitHub repository inside JStudio.
+2. JStudio will find the `build.gradle` file in the root.
+3. **Important:** Go to JStudio **Settings** and ensure the **JDK Version** is set to **17**.
+4. Tap the **Run** icon.
 
-## Step 4: Run the App
-- In JStudio, tap the **Play (Run)** icon.
-- JStudio will compile the Kotlin code natively and generate an APK.
-- Install and Open the app on your device.
-
----
-
-## Native Source Code
-The files provided in the `native-android/` folder of this project contain the production-ready code. You can copy-paste them directly into your Android Studio project.
-
-### Key Logic Features
-- **Local Persistence**: Uses SharedPreferences to save streaks, completed sets, and the "weak list" (words the user got wrong).
-- **Jetpack Compose UI**: A modern, declarative UI with smooth transitions and Material 3 design.
-- **Glassmorphism**: Replicates the "glass" look using high-contrast surfaces and subtle shadows.
+### Technical Note
+I have updated your source code to be compatible with standard Android directory structures.
+- **Root**: `.github/`, `app/`, `build.gradle`, `settings.gradle`
+- **Main App**: `app/src/main/java/com/jtvocab/quiz/`
+- **Resources**: `app/src/main/AndroidManifest.xml`
