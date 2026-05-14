@@ -50,7 +50,9 @@ class VocabViewModel : ViewModel() {
         viewModelScope.launch {
             _loadingComp.value = true
             val pqrs = com.jtvocab.quiz.data.AndroidGeminiService.generatePQRS()
+            kotlinx.coroutines.delay(500)
             val cloze = com.jtvocab.quiz.data.AndroidGeminiService.generateCloze()
+            kotlinx.coroutines.delay(500)
             val rc = com.jtvocab.quiz.data.AndroidGeminiService.generateRC()
             
             if (pqrs.isNotEmpty()) _dailyPQRS.value = pqrs

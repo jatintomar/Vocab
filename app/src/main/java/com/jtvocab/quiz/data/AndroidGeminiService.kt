@@ -19,7 +19,7 @@ object AndroidGeminiService {
     private val apiKey = System.getenv("GEMINI_API_KEY") ?: ""
     
     private val model = GenerativeModel(
-        modelName = "gemini-3-flash-preview",
+        modelName = "gemini-1.5-flash",
         apiKey = apiKey,
         generationConfig = generationConfig {
             responseMimeType = "application/json"
@@ -66,17 +66,22 @@ object AndroidGeminiService {
         try {
             val response = model.generateContent(prompt)
             JSONObject(response.text ?: "{}")
-        } catch (e: Exception) { null }
+        } catch (e: Exception) { 
+            // Fallback to a simple static pulse if API fails
+            JSONObject().apply {
+                put("word", "Resilient")
+                put("insight", "Essential for competitive exams where setbacks are common.")
+                put("usage", "The aspirant showed resilient spirit despite technical glitches.")
+            }
+        }
     }
 
     suspend fun generatePQRS(): List<com.jtvocab.quiz.model.PQRSQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 / CHSL 2026 Pattern.
-            Topic: Scientific breakthroughs, Philosophy, Global Economics, or High-level Literature.
-            Include S1 (Fixed Start) and S6 (Fixed End) for all.
-            Sentences P, Q, R, S must be complex, logically dense, and use advanced connectors.
-            Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4 strings), "correctSequence", "explanation", "logicalConnectors" (array of strings).
+            Generate 3 CONCISE but CHALLENGING Parajumble (PQRS) questions for SSC CGL 2026.
+            Include S1 (Start) and S6 (End).
+            Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4), "correctSequence", "explanation", "logicalConnectors" (array).
         """.trimIndent()
         try {
             val response = model.generateContent(prompt)
@@ -99,16 +104,16 @@ object AndroidGeminiService {
                 ))
             }
             list
-        } catch (e: Exception) { emptyList() }
+        } catch (e: Exception) { 
+            com.jtvocab.quiz.data.VocabRepository.dailyPQRS 
+        }
     }
 
     suspend fun generateCloze(): List<com.jtvocab.quiz.model.ClozeQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2 / CHSL 2026 Pattern.
-            Difficulty: HIGH (Focus on vocabulary found in The Hindu editorials or Scientific journals).
-            Each passage should have 5 blanks.
-            Return ONLY a JSON array of objects with keys: "id", "passage" (with (1), (2), etc. labels), "blanks" (array of objects with "index", "options", "answer", "explanation").
+            Generate 1 Advanced Cloze Test passage (150 words) for SSC 2026 Pattern.
+            Return ONLY a JSON array of objects with keys: "id", "passage", "blanks" (array of index, options, answer, explanation).
         """.trimIndent()
         try {
             val response = model.generateContent(prompt)
@@ -135,7 +140,9 @@ object AndroidGeminiService {
                 ))
             }
             list
-        } catch (e: Exception) { emptyList() }
+        } catch (e: Exception) { 
+            com.jtvocab.quiz.data.VocabRepository.dailyCloze 
+        }
     }
 
     suspend fun generateRC(): com.jtvocab.quiz.model.RCQuestion? = withContext(Dispatchers.IO) {
@@ -173,6 +180,8 @@ object AndroidGeminiService {
                 passage = obj.getString("passage"),
                 questions = qs
             )
-        } catch (e: Exception) { null }
+        } catch (e: Exception) { 
+            com.jtvocab.quiz.data.VocabRepository.dailyRC 
+        }
     }
 }

@@ -222,8 +222,9 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
             Spacer(Modifier.height(12.dp))
             Text("Goal: Master 82 terms (OWS: 27, SY: 24, ID: 24, PH: 7)", fontSize = 14.sp, fontWeight = FontWeight.Black)
             Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(1, 2, 3, 4, 5).forEach { d ->
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(end = 16.dp)) {
+                items(75) { index ->
+                    val d = index + 1
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -232,7 +233,7 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
                             .clickable { viewModel.setChallengeDay(d) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(d.toString(), fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
+                        Text(d.toString(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
@@ -257,13 +258,13 @@ fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
             Text(
                 title,
                 fontWeight = FontWeight.Black,
-                fontSize = 18.sp,
+                fontSize = 15.sp,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 "0%",
-                fontSize = 10.sp,
+                fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -306,7 +307,7 @@ fun DashboardContent(
             Text(
                 "JT DASHBOARD",
                 fontWeight = FontWeight.Black,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -502,7 +503,7 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
         ) {
             Column(Modifier.padding(24.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("SETTINGS", fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 24.sp, color = MaterialTheme.colorScheme.primary)
+                    Text("SETTINGS", fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
                     IconButton(onClick = onClose) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.5f)) }
                 }
 
@@ -1002,10 +1003,10 @@ fun CompSection(viewModel: VocabViewModel) {
 fun PQRSSingleView(pqrs: PQRSQuestion, index: Int, total: Int, onPrev: () -> Unit, onNext: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("PQRS JUMBLE ${index + 1}/$total", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+            Text("PQRS JUMBLE ${index + 1}/$total", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
             LinearProgressIndicator(
                 progress = (index + 1).toFloat() / total,
-                modifier = Modifier.width(100.dp).height(4.dp).clip(CircleShape),
+                modifier = Modifier.width(80.dp).height(3.dp).clip(CircleShape),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.onSurface.copy(0.1f)
             )
@@ -1186,6 +1187,9 @@ fun ClozeCard(cloze: ClozeQuestion) {
 
 @Composable
 fun PQRSCard(pqrs: PQRSQuestion) {
+    var selectedOption by remember { mutableStateOf<String?>(null) }
+    var isAnswered by remember { mutableStateOf(false) }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // S1 Label
         pqrs.s1?.let { s1Text ->
@@ -1259,57 +1263,81 @@ fun PQRSCard(pqrs: PQRSQuestion) {
         Text("CHOOSE CORRECT SEQUENCE", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.padding(start = 8.dp))
         
         // Options
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val options = listOf(pqrs.correctSequence, "PSQR", "RQPS", "QPSR").shuffled().distinct().take(3)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val options = remember(pqrs.id) { 
+                listOf(pqrs.correctSequence, "PSQR", "RQPS", "QPSR").shuffled().distinct().take(4) 
+            }
             options.forEach { seq ->
-                var isSelected by remember { mutableStateOf(false) }
+                val isSelected = selectedOption == seq
+                val isCorrect = seq == pqrs.correctSequence
+                
+                val borderColor = when {
+                    isAnswered && isCorrect -> Color(0xFF10B981)
+                    isSelected && !isCorrect -> Color(0xFFEF4444)
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface.copy(0.1f)
+                }
+
                 Surface(
-                    onClick = { isSelected = !isSelected },
+                    onClick = { 
+                        if (!isAnswered) {
+                            selectedOption = seq
+                            isAnswered = true
+                        }
+                    },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.1f) else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, borderColor)
                 ) {
                     Text(
                         seq, 
-                        modifier = Modifier.padding(vertical = 16.dp), 
+                        modifier = Modifier.padding(vertical = 12.dp), 
                         textAlign = TextAlign.Center, 
                         fontWeight = FontWeight.Black, 
-                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                        fontSize = 13.sp
+                        color = when {
+                            isAnswered && isCorrect -> Color(0xFF10B981)
+                            isSelected && !isCorrect -> Color(0xFFEF4444)
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
+                        fontSize = 12.sp
                     )
                 }
             }
         }
 
-        if (pqrs.logicalConnectors.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
-            Text("LOGICS TO SPOT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pqrs.logicalConnectors.forEach { connector ->
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.secondary.copy(0.1f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(connector, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+        AnimatedVisibility(visible = isAnswered) {
+            Column {
+                if (pqrs.logicalConnectors.isNotEmpty()) {
+                    Spacer(Modifier.height(16.dp))
+                    Text("LOGICS TO SPOT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(start = 8.dp))
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        pqrs.logicalConnectors.forEach { connector ->
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.secondary.copy(0.1f))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(connector, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        Spacer(Modifier.height(16.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.onSurface.copy(0.02f)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
-        ) {
-            Column(Modifier.padding(16.dp)) {
-                Text("STRATEGIC EXPLANATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(8.dp))
-                Text(pqrs.explanation, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.7f), lineHeight = 20.sp)
+                Spacer(Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.1f))
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("STRATEGIC EXPLANATION", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(8.dp))
+                        Text(pqrs.explanation, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f), lineHeight = 20.sp)
+                    }
+                }
             }
         }
     }
