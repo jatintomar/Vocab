@@ -227,7 +227,6 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
         }
     }
 }
-}
 
 @Composable
 fun SearchResultsSection(viewModel: VocabViewModel) {
@@ -498,7 +497,6 @@ fun DashboardContent(
         }
     }
 }
-}
 
 @Composable
 fun DrawerItem(
@@ -670,7 +668,6 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
             }
         }
     }
-}
 }
 
 @Composable
