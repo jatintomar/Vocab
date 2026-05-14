@@ -4,15 +4,7 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAI() {
   if (!aiInstance) {
-    // Vite's define 'process.env.GEMINI_API_KEY' will replace it with a string literal if available.
-    // If not, we try to access it safely.
-    let apiKey = "";
-    try {
-      apiKey = process.env.GEMINI_API_KEY || "";
-    } catch (e) {
-      // process.env might not be available
-    }
-
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       console.warn("GEMINI_API_KEY not found. AI features may fall back to default text.");
     }

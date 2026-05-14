@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.util.UUID
+import com.jtvocab.quiz.BuildConfig
 
 data class WordInsight(
     val word: String,
@@ -16,7 +17,7 @@ data class WordInsight(
 
 object AndroidGeminiService {
     // API KEY will be fetched from protected environment or user config
-    private val apiKey = System.getenv("GEMINI_API_KEY") ?: ""
+    private val apiKey = BuildConfig.GEMINI_API_KEY
     
     private val model = GenerativeModel(
         modelName = "gemini-1.5-flash",
