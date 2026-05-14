@@ -217,7 +217,7 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
         Column(Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("DAY $day STRATEGY", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, letterSpacing = 2.sp)
-                Text("Plan 2026", fontWeight = FontWeight.Bold, fontSize = 10.sp, opacity = 0.5f)
+                Text("Plan 2026", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
             Spacer(Modifier.height(12.dp))
             Text("Goal: Master 82 terms (OWS: 27, SY: 24, ID: 24, PH: 7)", fontSize = 14.sp, fontWeight = FontWeight.Black)
@@ -237,6 +237,39 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CustomTopBar(streak: Int, title: String, onMenuClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
+        }
+        
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                title,
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                "0%",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        StreakBadge(streak)
     }
 }
 
@@ -869,7 +902,7 @@ fun CompSection(viewModel: VocabViewModel) {
                         Spacer(Modifier.height(12.dp))
                         Text(pulse!!.optString("word", ""), fontWeight = FontWeight.Black, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.height(4.dp))
-                        Text(pulse!!.optString("insight", ""), fontSize = 12.sp, opacity = 0.7f, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        Text(pulse!!.optString("insight", ""), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                         Spacer(Modifier.height(8.dp))
                         Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface.copy(0.5f), RoundedCornerShape(12.dp)).padding(12.dp)) {
                             Text(pulse!!.optString("usage", ""), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
