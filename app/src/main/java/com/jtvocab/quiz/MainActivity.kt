@@ -926,7 +926,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 }
 
 @Composable
-fun LearnCard(index: Int, quiz: QuizItem, viewModel: VocabViewModel) {
+fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel) {
     val insight by viewModel.currentInsight
     val loadingAI by viewModel.loadingAI
     val item = quiz.item
@@ -943,7 +943,7 @@ fun LearnCard(index: Int, quiz: QuizItem, viewModel: VocabViewModel) {
         Column(Modifier.padding(20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    if (item.cat == "id") item.w else item.a,
+                    (if (item.cat == "id") item.w else item.a) ?: "",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary,
@@ -960,7 +960,7 @@ fun LearnCard(index: Int, quiz: QuizItem, viewModel: VocabViewModel) {
             Spacer(Modifier.height(8.dp))
             
             Text(
-                if (item.cat == "id") item.a else item.w,
+                (if (item.cat == "id") item.a else item.w) ?: "",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
                 lineHeight = 20.sp
@@ -1583,6 +1583,7 @@ fun PQRSCard(pqrs: PQRSQuestion) {
                             }
                         }
                     }
+                }
                 }
 
                 Spacer(Modifier.height(16.dp))
