@@ -311,9 +311,9 @@ fun DashboardContent(
 
         DrawerItem(
             icon = Icons.Default.Face,
-            title = "DAILY COMP.",
-            subtitle = "Shift Pattern 2026",
-            isSelected = false,
+            title = "AI COMPREHENSION",
+            subtitle = "Generate Daily Tasks",
+            isSelected = mode == "comp",
             onClick = { onModeSelect("comp") }
         )
 
@@ -323,7 +323,7 @@ fun DashboardContent(
             icon = Icons.Default.Menu,
             title = "VOCAB PRACTICE",
             subtitle = "OW / Set 1",
-            isSelected = true,
+            isSelected = mode == "quiz",
             onClick = { onModeSelect("quiz") }
         )
 
@@ -333,30 +333,20 @@ fun DashboardContent(
         Spacer(Modifier.height(8.dp))
         
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val cats = listOf("ow" to "OWS", "sy" to "SYNONYMS")
+            val cats = listOf("ow" to "OWS", "sy" to "SYNO")
             cats.forEach { (id, label) ->
                 CatButton(label, currentCat == id, modifier = Modifier.weight(1f)) { onCatSelect(id) }
             }
         }
         Spacer(Modifier.height(8.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val cats = listOf("id" to "IDIOMS", "ph" to "PHRASAL")
+            val cats = listOf("id" to "IDIOM", "ph" to "PHRASAL")
             cats.forEach { (id, label) ->
                 CatButton(label, currentCat == id, modifier = Modifier.weight(1f)) { onCatSelect(id) }
             }
         }
 
-        Spacer(Modifier.height(40.dp))
-
-        DrawerItem(
-            icon = Icons.Default.FavoriteBorder,
-            title = "75 DAY PLAN",
-            subtitle = "Progress: 0%",
-            isSelected = false,
-            onClick = {}
-        )
-
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
 
         DrawerItem(
             icon = Icons.Default.Info,
@@ -617,7 +607,7 @@ fun QuizSection(viewModel: VocabViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        itemsIndexed(quizItems) { index, quiz ->
+        itemsIndexed(quizItems, key = { _, q -> q.item.id }) { index, quiz ->
             QuizCard(index, quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
@@ -629,6 +619,7 @@ fun QuizSection(viewModel: VocabViewModel) {
 fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
     val insight by viewModel.currentInsight
     val loadingAI by viewModel.loadingAI
+    val isShowingThisInsight = insight?.word == quiz.item.w
 
     Card(
         modifier = Modifier
@@ -734,14 +725,14 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     .clip(RoundedCornerShape(16.dp))
                     .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f), RoundedCornerShape(16.dp))
                     .clickable { 
-                        if (insight != null) viewModel.clearInsight() 
+                        if (isShowingThisInsight) viewModel.clearInsight() 
                         else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
                     }
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (loadingAI) {
+                if (loadingAI && isShowingThisInsight) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
                 } else {
                     Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -750,7 +741,7 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                 }
             }
  
-            AnimatedVisibility(visible = insight != null) {
+            AnimatedVisibility(visible = isShowingThisInsight && insight != null) {
                 insight?.let { res ->
                     Column(
                         modifier = Modifier
@@ -825,54 +816,85 @@ fun CompSection(viewModel: VocabViewModel) {
     val pqrsIndex by viewModel.currentPQRSIndex
     val clozeIndex by viewModel.currentClozeIndex
     
+    val isLoading by viewModel.loadingComp
+    
     Column(modifier = Modifier.fillMaxSize()) {
-        // Navigation Bar for Comp types
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("PQRS", "CLOZE", "RC").forEach { type ->
-                val isSelected = compType == type
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                        .clickable { viewModel.setCompType(type) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(type, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Architecting Daily Tasks...", fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
                 }
             }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        Box(modifier = Modifier.weight(1f)) {
-            when (compType) {
-                "PQRS" -> {
-                    val currentPQRS = pqrsList[pqrsIndex]
-                    PQRSSingleView(
-                        pqrs = currentPQRS,
-                        index = pqrsIndex,
-                        total = pqrsList.size,
-                        onPrev = { viewModel.prevPQRS() },
-                        onNext = { viewModel.nextPQRS() }
+        } else {
+            // Navigation Bar for Comp types
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("PQRS", "CLOZE", "RC").forEach { type ->
+                        val isSelected = compType == type
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                                .clickable { viewModel.setCompType(type) }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(type, fontWeight = FontWeight.Black, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f))
+                        }
+                    }
+                }
+                
+                Spacer(Modifier.width(12.dp))
+                
+                IconButton(
+                    onClick = { viewModel.generateComp() },
+                    modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(0.1f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "AI Generate",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
-                "CLOZE" -> {
-                    val currentCloze = clozeList[clozeIndex]
-                    ClozeSingleView(
-                        cloze = currentCloze,
-                        index = clozeIndex,
-                        total = clozeList.size,
-                        onPrev = { viewModel.prevCloze() },
-                        onNext = { viewModel.nextCloze() }
-                    )
-                }
-                "RC" -> {
-                    RCCard(rc)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Box(modifier = Modifier.weight(1f)) {
+                when (compType) {
+                    "PQRS" -> {
+                        val currentPQRS = pqrsList[pqrsIndex]
+                        PQRSSingleView(
+                            pqrs = currentPQRS,
+                            index = pqrsIndex,
+                            total = pqrsList.size,
+                            onPrev = { viewModel.prevPQRS() },
+                            onNext = { viewModel.nextPQRS() }
+                        )
+                    }
+                    "CLOZE" -> {
+                        val currentCloze = clozeList[clozeIndex]
+                        ClozeSingleView(
+                            cloze = currentCloze,
+                            index = clozeIndex,
+                            total = clozeList.size,
+                            onPrev = { viewModel.prevCloze() },
+                            onNext = { viewModel.nextCloze() }
+                        )
+                    }
+                    "RC" -> {
+                        RCCard(rc)
+                    }
                 }
             }
         }
@@ -1004,28 +1026,30 @@ fun ClozeCard(cloze: ClozeQuestion) {
             
             Spacer(Modifier.height(32.dp))
             
-            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                cloze.blanks.take(1).forEach { blank ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(blank.id.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                cloze.blanks.forEach { blank ->
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(blank.index.toString(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("SELECT WORD FOR BLANK (${blank.index})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
                         }
-                        Spacer(Modifier.width(12.dp))
-                        Text("SELECT THE MOST APPROPRIATE WORD FOR BLANK (${blank.id})", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.5f))
-                    }
-                    
-                    blank.options.forEach { option ->
-                        Surface(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                        ) {
-                            Text(option, modifier = Modifier.padding(20.dp), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        
+                        blank.options.forEach { option ->
+                            Surface(
+                                onClick = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f))
+                            ) {
+                                Text(option, modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
+                            }
                         }
                     }
                 }

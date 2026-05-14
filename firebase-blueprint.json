@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "VocabItem": {
+      "title": "Vocabulary Item",
+      "description": "A single vocabulary entry including word, answer, and metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "word": { "type": "string" },
+        "answer": { "type": "string" },
+        "hindi": { "type": "string" },
+        "category": { "type": "string", "enum": ["ow", "sy", "id", "ph"] }
+      },
+      "required": ["id", "word", "answer", "category"]
+    },
+    "PQRSQuestion": {
+      "title": "PQRS Question",
+      "description": "A sentence rearrangement question.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "s1": { "type": "string" },
+        "s6": { "type": "string" },
+        "sentences": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "correctSequence": { "type": "string" },
+        "explanation": { "type": "string" }
+      },
+      "required": ["id", "sentences", "correctSequence"]
+    },
+    "ClozeQuestion": {
+      "title": "Cloze Test Question",
+      "description": "A passage with multiple blanks.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "passage": { "type": "string" },
+        "blanks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "index": { "type": "integer" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "answer": { "type": "string" },
+              "explanation": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["id", "passage", "blanks"]
+    },
+    "RCQuestion": {
+      "title": "Reading Comprehension",
+      "description": "A long passage with multiple sub-questions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "passage": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "q": { "type": "string" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "a": { "type": "string" },
+              "explanation": { "type": "string" }
+            }
+          }
+        }
+      },
+      "required": ["id", "passage", "questions"]
+    }
+  },
+  "firestore": {
+    "/vocab/{vocabId}": {
+      "schema": "VocabItem",
+      "description": "Collection of vocabulary items."
+    },
+    "/comprehension/pqrs/items/{pqrsId}": {
+      "schema": "PQRSQuestion",
+      "description": "AI generated PQRS questions."
+    },
+    "/comprehension/cloze/items/{clozeId}": {
+      "schema": "ClozeQuestion",
+      "description": "AI generated Cloze tests."
+    },
+    "/comprehension/rc/items/{rcId}": {
+      "schema": "RCQuestion",
+      "description": "AI generated RC passages."
+    }
+  }
+}

@@ -43,6 +43,26 @@ class VocabViewModel : ViewModel() {
     fun nextCloze() { if (_currentClozeIndex.value < dailyCloze.value.size - 1) _currentClozeIndex.value++ }
     fun prevCloze() { if (_currentClozeIndex.value > 0) _currentClozeIndex.value-- }
 
+    private val _loadingComp = mutableStateOf(false)
+    val loadingComp: State<Boolean> = _loadingComp
+
+    fun generateComp() {
+        viewModelScope.launch {
+            _loadingComp.value = true
+            val pqrs = com.jtvocab.quiz.data.AndroidGeminiService.generatePQRS()
+            val cloze = com.jtvocab.quiz.data.AndroidGeminiService.generateCloze()
+            val rc = com.jtvocab.quiz.data.AndroidGeminiService.generateRC()
+            
+            if (pqrs.isNotEmpty()) _dailyPQRS.value = pqrs
+            if (cloze.isNotEmpty()) _dailyCloze.value = cloze
+            if (rc != null) _dailyRC.value = rc
+            
+            _currentPQRSIndex.value = 0
+            _currentClozeIndex.value = 0
+            _loadingComp.value = false
+        }
+    }
+
     private val _loadingAI = mutableStateOf(false)
     val loadingAI: State<Boolean> = _loadingAI
 
