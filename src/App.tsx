@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw } from 'lucide-react';
 import { getWordInsight, WordInsight } from './services/geminiService';
-import { getDailyComprehension, DailyComprehensionData } from './services/comprehensionService';
-import { ComprehensionView } from './components/ComprehensionView';
 
 interface VocabItem {
   id: string;
@@ -20,7 +18,7 @@ interface VocabData {
   pv: VocabItem[];
 }
 
-type AppMode = 'quiz' | 'learn' | 'comp';
+type AppMode = 'quiz' | 'learn';
 type Category = 'ow' | 'sy' | 'id' | 'pv';
 
 type ThemeKey = 'deepsea' | 'evergreen' | 'parchment' | 'nordic';
@@ -438,11 +436,6 @@ export default function App() {
   const TOTAL_PLAN_DAYS = 75;
 
   const [mode, setMode] = useState<AppMode>('quiz');
-  const [compData, setCompData] = useState<DailyComprehensionData | null>(null);
-  const [compAnswered, setCompAnswered] = useState<Record<string, any>>({});
-  const [compSessionMode, setCompSessionMode] = useState<'quiz' | 'exam'>('quiz');
-  const [loadingComp, setLoadingComp] = useState(false);
-  const [showCompResults, setShowCompResults] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cat, setCat] = useState<Category>('ow');
   const [categoryLastSets, setCategoryLastSets] = useState<Record<Category, number>>({ ow: 0, sy: 0, id: 0, pv: 0 });
@@ -562,30 +555,8 @@ export default function App() {
         // Migration for old structure
         setCategoryLastSets(prev => ({ ...prev, [parsed.cat || 'ow']: parsed.curSet }));
       }
-      
-      // Daily Comprehension Sync
-      if (parsed.compData && parsed.compDataTimestamp) {
-        const savedDate = new Date(parsed.compDataTimestamp).toDateString();
-        const todayDate = new Date().toDateString();
-        if (savedDate === todayDate) {
-          setCompData(parsed.compData);
-        }
-      }
     }
   }, []);
-
-  useEffect(() => {
-    if (!compData) {
-      setLoadingComp(true);
-      getDailyComprehension().then(data => {
-        setCompData(data);
-        setLoadingComp(false);
-      }).catch(err => {
-        console.error("AI Fetch error:", err);
-        setLoadingComp(false);
-      });
-    }
-  }, [compData]);
 
   useEffect(() => {
     localStorage.setItem('jt_vocab_v2', JSON.stringify({ 
@@ -598,12 +569,10 @@ export default function App() {
       activityHistory,
       achievements,
       challengeDay,
-      compData,
-      compDataTimestamp: compData ? new Date().toISOString() : null,
       cat,
       categoryLastSets
     }));
-  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, compData, cat, categoryLastSets]);
+  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, categoryLastSets]);
 
   const handleAnswer = (qIdx: number, item: VocabItem, choice: string) => {
     if (answered[qIdx]) return;
@@ -758,28 +727,6 @@ export default function App() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <button 
-                  onClick={() => {
-                    setMode('comp');
-                    setIsSidebarOpen(false);
-                    setShowResults(false);
-                    if (!compData) {
-                      setLoadingComp(true);
-                      getDailyComprehension().then(data => {
-                        setCompData(data);
-                        setLoadingComp(false);
-                      });
-                    }
-                  }}
-                  className={`flex items-center gap-3 p-4 rounded-3xl transition-all ${mode === 'comp' ? `${accent.bg} text-white shadow-lg` : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
-                >
-                  <BrainCircuit size={20} />
-                  <div className="text-left">
-                    <p className="text-xs font-black uppercase tracking-widest">Daily Comp.</p>
-                    <p className="text-[9px] opacity-70">Shift Pattern 2026</p>
-                  </div>
-                </button>
-
                 <button 
                   onClick={() => {
                     setMode('quiz');
@@ -992,8 +939,7 @@ export default function App() {
         </button>
         <div className="flex flex-col items-center">
           <h1 className="text-lg font-black tracking-tighter italic uppercase leading-none">
-            {mode === 'comp' ? <span className={accent.text}>DAILY COMPREHENSION</span> :
-             isWeakRevision ? <span className="text-rose-500">REVISING WEAK LIST</span> : 
+            {isWeakRevision ? <span className="text-rose-500">REVISING WEAK LIST</span> : 
              isChallengeMode ? <span className={accent.text}>75 DAYS CHALLENGE</span> :
              'JT VOCAB QUIZ'}
           </h1>
@@ -1001,13 +947,13 @@ export default function App() {
             <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">
               <motion.div 
                 initial={{ width: 0 }}
-                animate={{ width: `${(mode === 'comp' ? 0 : stats.mastered / (stats.total || 1)) * 100}%` }}
+                animate={{ width: `${(stats.mastered / (stats.total || 1)) * 100}%` }}
                 transition={{ duration: 1, ease: "easeOut" }}
                 className={`h-full ${accent.bg}`} 
               />
             </div>
             <span className={`text-[8px] font-black ${accent.text}`}>
-              {mode === 'comp' ? 'DAILY' : `${Math.round((stats.mastered / (stats.total || 1)) * 100)}%`}
+              {`${Math.round((stats.mastered / (stats.total || 1)) * 100)}%`}
             </span>
           </div>
         </div>
@@ -1121,7 +1067,7 @@ export default function App() {
           </div>
         )}
         {/* Mode Toggles */}
-        {!isWeakRevision && mode !== 'comp' && (
+        {!isWeakRevision && (
           <div className={`flex p-1 rounded-2xl mb-6 shadow-inner ${theme.secondary}`}>
             <button 
               onClick={() => { setMode('quiz'); setAnswered({}); setShowResults(false); }}
@@ -1139,7 +1085,7 @@ export default function App() {
         )}
 
         {/* Day Strategy */}
-        {isChallengeMode && mode !== 'comp' && (
+        {isChallengeMode && (
           <div className={`mb-6 p-5 rounded-[2.5rem] border ${theme.border} ${theme.secondary} shadow-xl shadow-black/10 backdrop-blur-md relative overflow-hidden`}>
             <div className="absolute top-0 right-0 p-4 opacity-10">
               <Zap size={64} />
@@ -1196,7 +1142,7 @@ export default function App() {
           </div>
         )}
 
-        {!isWeakRevision && mode !== 'comp' && (
+        {!isWeakRevision && (
           <div className="flex flex-col gap-6 mb-8">
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {isChallengeMode ? (
@@ -1244,63 +1190,7 @@ export default function App() {
           </div>
         )}
 
-        {mode === 'comp' ? (
-          <div className="mt-4">
-            {!showCompResults && (
-              <div className={`mb-10 p-6 rounded-[2.5rem] border ${theme.border} ${theme.card} shadow-2xl`}>
-                <div className="flex justify-between items-center mb-8">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${accent.text}`}>Session Config</span>
-                  <Sparkles size={18} className="opacity-30" />
-                </div>
-
-                <div className="space-y-6">
-                   <div className="space-y-3">
-                      <p className="text-sm font-black italic tracking-tighter uppercase">1. Choose Session Intensity</p>
-                      <div className={`flex p-1 rounded-2xl shadow-inner ${theme.secondary}`}>
-                        <button 
-                          onClick={() => setCompSessionMode('quiz')}
-                          className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${compSessionMode === 'quiz' ? `${accent.bg} text-white shadow-lg` : 'opacity-40 text-slate-500'}`}
-                        >
-                          QUIZ (INSTANT ANSWERS)
-                        </button>
-                        <button 
-                          onClick={() => setCompSessionMode('exam')}
-                          className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${compSessionMode === 'exam' ? 'bg-slate-700 text-white' : 'opacity-40 text-slate-500'}`}
-                        >
-                          EXAM (RESULTS AT END)
-                        </button>
-                      </div>
-                   </div>
-
-                   {loadingComp ? (
-                     <div className="py-10 flex flex-col items-center gap-4">
-                        <BrainCircuit size={40} className="animate-spin opacity-20" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Syncing 2026 Shift Patterns...</p>
-                     </div>
-                   ) : compData && (
-                     <motion.button 
-                       initial={{ scale: 0.95, opacity: 0 }}
-                       animate={{ scale: 1, opacity: 1 }}
-                       onClick={() => setShowCompResults(true)}
-                       className={`w-full py-6 rounded-[2rem] font-black text-white tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] ${accent.bg} ${accent.shadow}`}
-                     >
-                       START DAILY PRACTICE
-                     </motion.button>
-                   )}
-                </div>
-              </div>
-            )}
-            {showCompResults && compData && (
-              <ComprehensionView 
-                data={compData}
-                theme={theme}
-                accent={accent}
-                sessionMode={compSessionMode}
-                onFinish={() => {}}
-              />
-            )}
-          </div>
-        ) : mode === 'learn' && !isWeakRevision && !isChallengeMode ? (
+        {mode === 'learn' && !isWeakRevision && !isChallengeMode ? (
           <div className="flex flex-col gap-4 mt-2">
             {activeBatch.map((item, idx) => {
               const globalSerial = idx + 1 + (curSet * SET_SIZE);

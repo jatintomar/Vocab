@@ -7,8 +7,6 @@ import androidx.compose.runtime.State
 import kotlinx.coroutines.launch
 import com.jtvocab.quiz.model.VocabItem
 import com.jtvocab.quiz.model.AppState
-import com.jtvocab.quiz.model.PQRSQuestion
-import com.jtvocab.quiz.model.ClozeQuestion
 import com.jtvocab.quiz.data.VocabRepository
 
 class VocabViewModel : ViewModel() {
@@ -18,51 +16,11 @@ class VocabViewModel : ViewModel() {
     private val _currentQuizBatch = mutableStateOf<List<QuizItem>>(emptyList())
     val currentQuizBatch: State<List<QuizItem>> = _currentQuizBatch
 
-    private val _dailyPQRS = mutableStateOf(VocabRepository.dailyPQRS)
-    val dailyPQRS: State<List<PQRSQuestion>> = _dailyPQRS
-
-    private val _dailyCloze = mutableStateOf(VocabRepository.dailyCloze)
-    val dailyCloze: State<List<ClozeQuestion>> = _dailyCloze
-
-    private val _dailyRC = mutableStateOf(VocabRepository.dailyRC)
-    val dailyRC: State<com.jtvocab.quiz.model.RCQuestion> = _dailyRC
-
-    // Tracking current task in comprehension
-    private val _currentCompType = mutableStateOf("PQRS") // PQRS, CLOZE, RC
-    val currentCompType: State<String> = _currentCompType
-
-    private val _currentPQRSIndex = mutableStateOf(0)
-    val currentPQRSIndex: State<Int> = _currentPQRSIndex
-
-    private val _currentClozeIndex = mutableStateOf(0)
-    val currentClozeIndex: State<Int> = _currentClozeIndex
+    private val _currentSetIndex = mutableStateOf(0)
+    val currentSetIndex: State<Int> = _currentSetIndex
 
     private val _score = mutableStateOf(0)
     val score: State<Int> = _score
-
-    fun setCompType(type: String) { _currentCompType.value = type }
-    fun nextPQRS() { if (_currentPQRSIndex.value < dailyPQRS.value.size - 1) _currentPQRSIndex.value++ }
-    fun prevPQRS() { if (_currentPQRSIndex.value > 0) _currentPQRSIndex.value-- }
-    fun nextCloze() { if (_currentClozeIndex.value < dailyCloze.value.size - 1) _currentClozeIndex.value++ }
-    fun prevCloze() { if (_currentClozeIndex.value > 0) _currentClozeIndex.value-- }
-
-    private val _loadingComp = mutableStateOf(false)
-    val loadingComp: State<Boolean> = _loadingComp
-
-    fun generateComp() {
-        viewModelScope.launch {
-            _loadingComp.value = true
-            val (pqrs, cloze, rc) = com.jtvocab.quiz.data.AndroidGeminiService.generateAllComp()
-            
-            if (pqrs.isNotEmpty()) _dailyPQRS.value = pqrs
-            if (cloze.isNotEmpty()) _dailyCloze.value = cloze
-            if (rc != null) _dailyRC.value = rc
-            
-            _currentPQRSIndex.value = 0
-            _currentClozeIndex.value = 0
-            _loadingComp.value = false
-        }
-    }
 
     private val _loadingAI = mutableStateOf(false)
     val loadingAI: State<Boolean> = _loadingAI
@@ -101,9 +59,6 @@ class VocabViewModel : ViewModel() {
         val isAnswered: Boolean = false,
         val selectedOption: String? = null
     )
-
-    private val _currentSetIndex = mutableStateOf(0)
-    val currentSetIndex: State<Int> = _currentSetIndex
 
     fun setAccentColor(color: Long) {
         _state.value = _state.value.copy(accentColor = color)

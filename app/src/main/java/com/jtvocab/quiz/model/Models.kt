@@ -34,38 +34,4 @@ data class AppState(
     )
 )
 
-data class PQRSQuestion(
-    val id: String,
-    val s1: String? = null,
-    val s6: String? = null,
-    val sentences: List<String>,
-    val correctSequence: String,
-    val explanation: String,
-    val logicalConnectors: List<String> = emptyList()
-)
 
-data class ClozeQuestion(
-    val id: String,
-    val passage: String,
-    val blanks: List<Blank>
-) {
-    data class Blank(
-        val index: Int,
-        val options: List<String>,
-        val answer: String,
-        val explanation: String
-    )
-}
-
-data class RCQuestion(
-    val id: String,
-    val passage: String,
-    val questions: List<RCSubQuestion>
-) {
-    data class RCSubQuestion(
-        val q: String,
-        val options: List<String>,
-        val a: String,
-        val explanation: String
-    )
-}
