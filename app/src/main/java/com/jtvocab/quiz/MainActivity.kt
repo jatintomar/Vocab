@@ -134,6 +134,7 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                 DashboardContent(
                     state = state,
                     currentCat = cat,
+                    currentMode = mode,
                     onCatSelect = { 
                         cat = it
                         viewModel.startQuiz(it, 0)
@@ -275,6 +276,7 @@ fun StreakBadge(streak: Int) {
 fun DashboardContent(
     state: AppState,
     currentCat: String,
+    currentMode: String,
     onCatSelect: (String) -> Unit,
     onModeSelect: (String) -> Unit,
     onSettingsOpen: () -> Unit,
@@ -313,7 +315,7 @@ fun DashboardContent(
             icon = Icons.Default.Face,
             title = "AI COMPREHENSION",
             subtitle = "Generate Daily Tasks",
-            isSelected = mode == "comp",
+            isSelected = currentMode == "comp",
             onClick = { onModeSelect("comp") }
         )
 
@@ -323,7 +325,7 @@ fun DashboardContent(
             icon = Icons.Default.Menu,
             title = "VOCAB PRACTICE",
             subtitle = "OW / Set 1",
-            isSelected = mode == "quiz",
+            isSelected = currentMode == "quiz",
             onClick = { onModeSelect("quiz") }
         )
 

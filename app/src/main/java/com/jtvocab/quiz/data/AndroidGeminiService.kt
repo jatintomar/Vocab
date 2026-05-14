@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 data class WordInsight(
+    val word: String,
     val context: String,
     val mnemonic: String,
     val synonyms: List<String>
@@ -40,6 +41,7 @@ object AndroidGeminiService {
             val json = JSONObject(response.text ?: "{}")
             
             WordInsight(
+                word = word,
                 context = json.optString("context", "No context available"),
                 mnemonic = json.optString("mnemonic", "No mnemonic available"),
                 synonyms = emptyList()
