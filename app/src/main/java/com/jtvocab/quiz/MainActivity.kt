@@ -151,8 +151,8 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     },
                     onModeSelect = {
                         mode = it
-                        if (it == "quiz" && viewModel.isChallengeMode.value) {
-                             viewModel.startChallengeQuiz(viewModel.challengeDay.value, cat)
+                        if (viewModel.isChallengeMode.value) {
+                             viewModel.startQuiz(cat, 0)
                         }
                         scope.launch { drawerState.close() }
                     },

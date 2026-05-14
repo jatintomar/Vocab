@@ -146,6 +146,7 @@ class VocabViewModel : ViewModel() {
     }
 
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {
+        _isChallengeMode.value = false
         _currentSetIndex.value = if (isWeakMode) -1 else setIndex
         _score.value = 0
         val items = if (isWeakMode) {

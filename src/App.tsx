@@ -807,6 +807,7 @@ export default function App() {
                           setShowResults(false);
                           setMode('quiz');
                           setIsWeakRevision(false);
+                          setIsChallengeMode(false);
                           setIsSidebarOpen(false);
                         }}
                         className={`px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${cat === item.id && mode === 'quiz' && !isChallengeMode && !isWeakRevision ? `${accent.bg} ${accent.border} text-white shadow-lg` : 'bg-white/5 border-white/5 opacity-50'}`}
@@ -1143,14 +1144,14 @@ export default function App() {
         {!isWeakRevision && (
           <div className={`flex p-1 rounded-2xl mb-6 shadow-inner ${theme.secondary}`}>
             <button 
-              onClick={() => { setMode('quiz'); setAnswered({}); setShowResults(false); }}
-              className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${mode === 'quiz' ? `${accent.bg} text-white shadow-lg` : 'opacity-40 text-slate-500'}`}
+              onClick={() => { setMode('quiz'); setAnswered({}); setShowResults(false); setIsChallengeMode(false); }}
+              className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${mode === 'quiz' && !isChallengeMode ? `${accent.bg} text-white shadow-lg` : 'opacity-40 text-slate-500'}`}
             >
               QUIZ MODE
             </button>
             <button 
-              onClick={() => {setMode('learn'); setShowResults(false); }}
-              className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${mode === 'learn' ? 'bg-slate-700 text-white' : 'opacity-40 text-slate-500'}`}
+              onClick={() => {setMode('learn'); setShowResults(false); setIsChallengeMode(false); }}
+              className={`flex-1 py-3 font-black text-[10px] tracking-widest rounded-xl transition-all ${mode === 'learn' && !isChallengeMode ? 'bg-slate-700 text-white' : 'opacity-40 text-slate-500'}`}
             >
               LEARN MODE
             </button>
