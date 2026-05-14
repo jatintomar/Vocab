@@ -46,12 +46,13 @@ object AndroidGeminiService {
 
         try {
             val response = model.generateContent(prompt)
-            val json = JSONObject(response.text ?: "{}")
+            val cleanText = response.text?.replace("```json\n", "")?.replace("```", "")?.trim() ?: "{}"
+            val json = JSONObject(cleanText)
             
             WordInsight(
                 word = word,
-                context = json.optString("context", "No context available"),
-                mnemonic = json.optString("mnemonic", "No mnemonic available"),
+                context = json.optString("context", "Commonly used in competitive exams to test vocabulary depth."),
+                mnemonic = json.optString("mnemonic", "Connect this with a similar sounding familiar word for easier recall."),
                 synonyms = emptyList()
             )
         } catch (e: Exception) {
@@ -72,7 +73,8 @@ object AndroidGeminiService {
         """.trimIndent()
         try {
             val response = model.generateContent(prompt)
-            JSONObject(response.text ?: "{}")
+            val cleanText = response.text?.replace("```json\n", "")?.replace("```", "")?.trim() ?: "{}"
+            JSONObject(cleanText)
         } catch (e: Exception) { 
             // Fallback to a simple static pulse if API fails
             JSONObject().apply {

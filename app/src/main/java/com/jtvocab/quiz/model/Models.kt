@@ -21,6 +21,7 @@ data class AppState(
     val completedSY: Set<Int> = emptySet(),
     val completedID: Set<Int> = emptySet(),
     val completedPH: Set<Int> = emptySet(),
+    val completedChallengeDays: Set<Int> = emptySet(),
     val weakListOW: List<VocabItem> = emptyList(),
     val weakListSY: List<VocabItem> = emptyList(),
     val weakListID: List<VocabItem> = emptyList(),

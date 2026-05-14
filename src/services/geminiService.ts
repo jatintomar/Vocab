@@ -4,11 +4,19 @@ let aiInstance: GoogleGenAI | null = null;
 
 function getAI() {
   if (!aiInstance) {
-    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY not found in process.env");
+    // Vite's define 'process.env.GEMINI_API_KEY' will replace it with a string literal if available.
+    // If not, we try to access it safely.
+    let apiKey = "";
+    try {
+      apiKey = process.env.GEMINI_API_KEY || "";
+    } catch (e) {
+      // process.env might not be available
     }
-    aiInstance = new GoogleGenAI({ apiKey: apiKey || "" });
+
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY not found. AI features may fall back to default text.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
 }
@@ -21,6 +29,11 @@ export interface WordInsight {
 }
 
 const insightCache: Record<string, WordInsight> = {};
+
+function cleanJSON(text: string): string {
+  // Remove markdown code blocks if present
+  return text.replace(/```json\n?|```/g, "").trim();
+}
 
 export async function getWordInsight(word: string, category: string, force: boolean = false): Promise<WordInsight> {
   const cacheKey = `${category}:${word.toLowerCase()}`;
@@ -36,7 +49,7 @@ export async function getWordInsight(word: string, category: string, force: bool
     2. "Mnemonic": Memory trick.
     3. "Example Sentence": A clear, high-yield sentence.
     4. "Top 3 Synonyms": Comma separated.
-    Return as JSON.
+    Return ONLY a valid JSON object.
   `;
 
   try {
@@ -58,16 +71,16 @@ export async function getWordInsight(word: string, category: string, force: bool
       },
     });
 
-    const result = JSON.parse(response.text);
+    const result = JSON.parse(cleanJSON(response.text));
     insightCache[cacheKey] = result;
     return result;
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      context: "Context unavailable. Focus on core meaning.",
-      mnemonic: "Repetition is key!",
-      usage: `Success requires mastering words like ${word}.`,
-      synonyms: ["Similar terms", "N/A"]
+      context: "Strategic context: This term frequently appears in SSC reading comprehension and fill-in-the-blanks.",
+      mnemonic: "Focus on the root meaning and associate it with its synonyms for better retention.",
+      usage: `Competitive success often depends on deep understanding of words like "${word}".`,
+      synonyms: ["Related term", "Exam high-yield"]
     };
   }
 }
@@ -75,12 +88,12 @@ export async function getWordInsight(word: string, category: string, force: bool
 export async function getDailyInsight(): Promise<{ word: string, insight: string, usage: string }> {
   const ai = getAI();
   const prompt = `
-    Provide a "Daily Vocabulary Pulse" for an SSC aspirant prepring for 2026.
+    Provide a "Daily Vocabulary Pulse" for an SSC aspirant preparing for 2026.
     Pick one very important high-yield word and provide:
     1. The word itself.
     2. A "Power Insight": Why this word is crucial specifically for competitive exams.
     3. A "Modern Usage": How it might appear in a current 2026 news context.
-    Return as JSON.
+    Return ONLY a valid JSON object.
   `;
 
   try {
@@ -100,7 +113,7 @@ export async function getDailyInsight(): Promise<{ word: string, insight: string
         },
       },
     });
-    return JSON.parse(response.text);
+    return JSON.parse(cleanJSON(response.text));
   } catch (error) {
     return {
       word: "Persistence",
@@ -109,3 +122,4 @@ export async function getDailyInsight(): Promise<{ word: string, insight: string
     };
   }
 }
+

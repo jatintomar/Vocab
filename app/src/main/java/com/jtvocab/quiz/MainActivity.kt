@@ -141,18 +141,23 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                     isChallengeMode = viewModel.isChallengeMode.value,
                     onCatSelect = { 
                         cat = it
-                        viewModel.setChallengeMode(false)
-                        viewModel.startQuiz(it, 0)
+                        if (viewModel.isChallengeMode.value) {
+                             viewModel.startChallengeQuiz(viewModel.challengeDay.value, it)
+                        } else {
+                             viewModel.startQuiz(it, 0)
+                        }
                         scope.launch { drawerState.close() }
                     },
                     onModeSelect = {
                         mode = it
-                        viewModel.setChallengeMode(false)
+                        if (it == "quiz" && viewModel.isChallengeMode.value) {
+                             viewModel.startChallengeQuiz(viewModel.challengeDay.value, cat)
+                        }
                         scope.launch { drawerState.close() }
                     },
                     onChallengeClick = {
                         mode = "quiz"
-                        viewModel.setChallengeMode(true)
+                        viewModel.setChallengeMode(true, cat)
                         scope.launch { drawerState.close() }
                     },
                     onWeakListClick = {
@@ -182,14 +187,28 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-                if (!isChallenge) {
-                    ModeSelector(mode) { mode = it; viewModel.setChallengeMode(false) }
+                if (isChallenge) {
+                    CategoryTabs(cat) { 
+                        cat = it
+                        viewModel.startChallengeQuiz(viewModel.challengeDay.value, it)
+                    }
+                    ChallengeStrategyCard(viewModel, cat)
+                } else {
+                    ModeSelector(mode) { mode = it }
                     
-                    SetSelector(currentCat = cat, currentSet = viewModel.currentSetIndex.value) { setIndex ->
+                    SetSelector(
+                        currentCat = cat, 
+                        currentSet = viewModel.currentSetIndex.value,
+                        completedSets = when(cat) {
+                            "ow" -> state.completedOWS
+                            "sy" -> state.completedSY
+                            "id" -> state.completedID
+                            "ph" -> state.completedPH
+                            else -> emptySet()
+                        }
+                    ) { setIndex ->
                         viewModel.startQuiz(cat, setIndex)
                     }
-                } else {
-                    ChallengeStrategyCard(viewModel)
                 }
                 
                 Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -204,8 +223,9 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
 }
 
 @Composable
-fun ChallengeStrategyCard(viewModel: VocabViewModel) {
+fun ChallengeStrategyCard(viewModel: VocabViewModel, currentCat: String) {
     val day by viewModel.challengeDay
+    val state by viewModel.state
     Card(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = RoundedCornerShape(24.dp),
@@ -218,20 +238,30 @@ fun ChallengeStrategyCard(viewModel: VocabViewModel) {
                 Text("Plan 2026", fontWeight = FontWeight.Bold, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
             Spacer(Modifier.height(12.dp))
-            Text("Goal: Master 82 terms (OWS: 27, SY: 24, ID: 24, PH: 7)", fontSize = 14.sp, fontWeight = FontWeight.Black)
+            Text("Task: Master ${currentCat.uppercase()} for Day $day", fontSize = 14.sp, fontWeight = FontWeight.Black)
             Spacer(Modifier.height(16.dp))
             LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp), contentPadding = PaddingValues(end = 16.dp)) {
                 items(75) { index ->
                     val d = index + 1
+                    val isCompleted = state.completedChallengeDays.contains(d)
                     Box(
                         modifier = Modifier
-                            .size(30.dp)
+                            .size(if (isCompleted) 34.dp else 30.dp)
                             .clip(CircleShape)
-                            .background(if (day == d) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
-                            .clickable { viewModel.setChallengeDay(d) },
+                            .background(
+                                if (day == d) MaterialTheme.colorScheme.primary 
+                                else if (isCompleted) Color(0xFF10B981).copy(0.2f)
+                                else MaterialTheme.colorScheme.surface
+                            )
+                            .then(if (isCompleted && day != d) Modifier.border(1.dp, Color(0xFF10B981).copy(0.5f), CircleShape) else Modifier)
+                            .clickable { viewModel.setChallengeDay(d, currentCat) },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(d.toString(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
+                        if (isCompleted && day != d) {
+                            Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp), tint = Color(0xFF10B981))
+                        } else {
+                            Text(d.toString(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (day == d) Color.White else MaterialTheme.colorScheme.onSurface)
+                        }
                     }
                 }
             }
@@ -432,7 +462,7 @@ fun CatButton(label: String, isSelected: Boolean, modifier: Modifier = Modifier,
 }
 
 @Composable
-fun SetSelector(currentCat: String, currentSet: Int, onSelect: (Int) -> Unit) {
+fun SetSelector(currentCat: String, currentSet: Int, completedSets: Set<Int>, onSelect: (Int) -> Unit) {
     val size = when(currentCat) {
         "ow" -> 50
         "sy" -> 25
@@ -460,20 +490,38 @@ fun SetSelector(currentCat: String, currentSet: Int, onSelect: (Int) -> Unit) {
         items(displayCount) { index ->
             val setNum = index + 1
             val isSelected = currentSet == index
+            val isCompleted = completedSets.contains(index)
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary 
+                        else if (isCompleted) MaterialTheme.colorScheme.primary.copy(0.1f)
+                        else MaterialTheme.colorScheme.surface
+                    )
+                    .then(if (isCompleted && !isSelected) Modifier.border(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f), RoundedCornerShape(12.dp)) else Modifier)
                     .clickable { onSelect(index) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "SET $setNum",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "SET $setNum",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 10.sp,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary 
+                                else if (isCompleted) MaterialTheme.colorScheme.primary.copy(0.8f)
+                                else MaterialTheme.colorScheme.onSurface.copy(0.4f)
+                    )
+                    if (isCompleted) {
+                        Icon(
+                            Icons.Filled.CheckCircle, 
+                            null, 
+                            modifier = Modifier.size(12.dp),
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     }
@@ -612,7 +660,7 @@ fun CategoryTabs(current: String, onSelect: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.Center
     ) {
-        listOf("ow" to "OWS", "sy" to "Syno", "id" to "Idiom").forEach { (id, label) ->
+        listOf("ow" to "OWS", "sy" to "SYNO", "id" to "IDIOM", "ph" to "PHRASAL").forEach { (id, label) ->
             val isSelected = current == id
             TextButton(onClick = { onSelect(id) }) {
                 Text(
@@ -685,7 +733,7 @@ fun QuizSection(viewModel: VocabViewModel) {
             modifier = Modifier.weight(1f),
             state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             itemsIndexed(quizItems, key = { _, q -> q.item.id + (q.selectedOption == q.item.a) }) { index, quiz ->
                 if (index == 0 || quizItems[index - 1].item.cat != quiz.item.cat) {
@@ -884,7 +932,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(16.dp), 
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         itemsIndexed(items = quizItems) { index, quizItem ->
             if (index == 0 || quizItems[index - 1].item.cat != quizItem.item.cat) {
@@ -906,6 +954,19 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
             }
             
             LearnCard(index, quizItem, viewModel)
+        }
+
+        if (quizItems.isNotEmpty()) {
+            item {
+                Button(
+                    onClick = { viewModel.setChallengeMode(false) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("MARK ALL AS LEARNED", fontWeight = FontWeight.Black, fontSize = 14.sp, letterSpacing = 1.sp)
+                }
+            }
         }
     }
 }

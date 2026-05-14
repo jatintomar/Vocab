@@ -74,44 +74,35 @@ class VocabViewModel : ViewModel() {
     private val _challengeDay = mutableStateOf(1)
     val challengeDay: State<Int> = _challengeDay
 
-    fun setChallengeMode(enabled: Boolean) {
-        val wasChallenge = _isChallengeMode.value
+    fun setChallengeMode(enabled: Boolean, category: String = "ow") {
         _isChallengeMode.value = enabled
         if (enabled) {
-            startChallengeQuiz(_challengeDay.value)
-        } else if (wasChallenge) {
-            _currentQuizBatch.value = emptyList()
-            _score.value = 0
+            startChallengeQuiz(_challengeDay.value, category)
         }
     }
 
-    fun setChallengeDay(day: Int) {
+    fun setChallengeDay(day: Int, category: String) {
         _challengeDay.value = day
         if (_isChallengeMode.value) {
-            startChallengeQuiz(day)
+            startChallengeQuiz(day, category)
         }
     }
 
-    private fun startChallengeQuiz(day: Int) {
+    fun startChallengeQuiz(day: Int, cat: String) {
         val quotas = mapOf("ow" to 27, "sy" to 24, "id" to 24, "ph" to 7)
-        val combinedItems = mutableListOf<VocabItem>()
-        
-        quotas.forEach { (cat, perDay) ->
-            val list = when(cat) {
-                "ow" -> VocabRepository.ows
-                "sy" -> VocabRepository.synonyms
-                "id" -> VocabRepository.idioms
-                "ph" -> VocabRepository.phrasal
-                else -> emptyList()
-            }
-            val start = (day - 1) * perDay
-            val end = minOf(start + perDay, list.size)
-            if (start < list.size) {
-                combinedItems.addAll(list.subList(start, end))
-            }
+        val perDay = quotas[cat] ?: 10
+        val list = when(cat) {
+            "ow" -> VocabRepository.ows
+            "sy" -> VocabRepository.synonyms
+            "id" -> VocabRepository.idioms
+            "ph" -> VocabRepository.phrasal
+            else -> emptyList()
         }
+        val start = (day - 1) * perDay
+        val end = minOf(start + perDay, list.size)
+        val filteredItems = if (start < list.size) list.subList(start, end) else emptyList()
 
-        _currentQuizBatch.value = combinedItems.sortedBy { it.cat }.map { item ->
+        _currentQuizBatch.value = filteredItems.map { item ->
             val allAnswers = when(item.cat) {
                 "ow" -> VocabRepository.ows
                 "sy" -> VocabRepository.synonyms
@@ -184,10 +175,39 @@ class VocabViewModel : ViewModel() {
             if (_score.value % 10 == 0) {
                 _state.value = _state.value.copy(streak = _state.value.streak + 1)
             }
+        } else {
+            addToWeakList(quizItem.item)
         }
 
-        if (answer != quizItem.item.a) {
-            addToWeakList(quizItem.item)
+        // Auto-check if session is finished
+        if (currentBatch.all { it.isAnswered }) {
+            finishSession()
+        }
+    }
+
+    fun finishSession() {
+        val currentBatch = _currentQuizBatch.value
+        if (currentBatch.isEmpty()) return
+        
+        val correctCount = currentBatch.count { it.selectedOption == it.item.a }
+        val totalCount = currentBatch.size
+        val successThreshold = totalCount * 0.8
+        
+        if (correctCount >= successThreshold) {
+            if (_isChallengeMode.value) {
+                _state.value = _state.value.copy(
+                    completedChallengeDays = _state.value.completedChallengeDays + _challengeDay.value
+                )
+            } else if (_currentSetIndex.value >= 0) {
+                val cat = currentBatch.firstOrNull()?.item?.cat ?: ""
+                _state.value = when(cat) {
+                    "ow" -> _state.value.copy(completedOWS = _state.value.completedOWS + _currentSetIndex.value)
+                    "sy" -> _state.value.copy(completedSY = _state.value.completedSY + _currentSetIndex.value)
+                    "id" -> _state.value.copy(completedID = _state.value.completedID + _currentSetIndex.value)
+                    "ph" -> _state.value.copy(completedPH = _state.value.completedPH + _currentSetIndex.value)
+                    else -> _state.value
+                }
+            }
         }
     }
 

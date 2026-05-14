@@ -358,7 +358,7 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
           onClick={async () => {
             if (insight) { setInsight(null); return; }
             setLoadingAI(true);
-            const res = await getWordInsight(item.w, cat);
+            const res = await getWordInsight(item.a, cat);
             setInsight(res);
             setLoadingAI(false);
           }}
@@ -393,7 +393,7 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
                 onClick={async (e) => {
                   e.stopPropagation();
                   setLoadingAI(true);
-                  const res = await getWordInsight(item.w, cat, true);
+                  const res = await getWordInsight(item.a, cat, true);
                   setInsight(res);
                   setLoadingAI(false);
                 }}
@@ -465,18 +465,12 @@ export default function App() {
        return weakList[cat];
     }
     if (isChallengeMode) {
-      const combined: VocabItem[] = [];
       const quotas: Record<Category, number> = { ow: 27, sy: 24, id: 24, pv: 7 };
-      const categories: Category[] = ['ow', 'sy', 'id', 'pv'];
-      
-      categories.forEach(c => {
-        const list = database[c] || [];
-        const perDay = quotas[c];
-        const start = (challengeDay - 1) * perDay;
-        const end = challengeDay * perDay;
-        combined.push(...list.slice(start, end));
-      });
-      return combined;
+      const list = database[cat] || [];
+      const perDay = quotas[cat];
+      const start = (challengeDay - 1) * perDay;
+      const end = challengeDay * perDay;
+      return list.slice(start, end);
     }
     let list = database[cat];
     const curSet = categoryLastSets[cat] || 0;
@@ -505,6 +499,10 @@ export default function App() {
   const currentScore = useMemo(() => {
     return (Object.values(answered) as { correct: boolean }[]).filter(a => a.correct).length;
   }, [answered]);
+
+  const allAnswered = useMemo(() => {
+    return activeBatch.length > 0 && Object.keys(answered).length === activeBatch.length;
+  }, [activeBatch, answered]);
 
   const currentQuestionIdx = useMemo(() => {
     return activeBatch.findIndex((_, i) => !answered[i]);
@@ -603,6 +601,10 @@ export default function App() {
   const finishSession = () => {
     const correctCount = (Object.values(answered) as { correct: boolean }[]).filter(a => a.correct).length;
     
+    // For learn mode, we assume 100% progress if they finish
+    const isLearnFinished = mode === 'learn' && !isWeakRevision && !isChallengeMode;
+    const threshold = activeBatch.length * 0.8;
+
     if (isChallengeMode) {
       if (correctCount >= activeBatch.length * 0.9) {
         setCompletedChallengeDays(prev => {
@@ -610,16 +612,17 @@ export default function App() {
           return [...prev, challengeDay].sort((a, b) => a - b);
         });
       }
-    } else if (!isWeakRevision && correctCount >= activeBatch.length * 0.8) {
+    } else if (!isWeakRevision && (correctCount >= threshold || isLearnFinished)) {
        setCompletedSets(prev => {
          const curSet = categoryLastSets[cat] || 0;
-         if (prev[cat].includes(curSet)) return prev;
-         return { ...prev, [cat]: [...prev[cat], curSet] };
+         const currentCompleted = prev[cat] || [];
+         if (currentCompleted.includes(curSet)) return prev;
+         return { ...prev, [cat]: [...currentCompleted, curSet] };
        });
     }
     setShowResults(true);
     
-    if (correctCount === activeBatch.length && activeBatch.length > 0) {
+    if ((correctCount === activeBatch.length || isLearnFinished) && activeBatch.length > 0) {
       confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
     }
 
@@ -632,10 +635,10 @@ export default function App() {
 
     // Achievement Checks
     const newAchievements: string[] = [];
-    if (correctCount === activeBatch.length && activeBatch.length >= 20) newAchievements.push('perfectionist');
-    if (stats.mastered + correctCount >= 100 && !achievements.includes('centurion')) newAchievements.push('centurion');
+    if ((correctCount === activeBatch.length || isLearnFinished) && activeBatch.length >= 20) newAchievements.push('perfectionist');
+    if (stats.mastered + (isLearnFinished ? activeBatch.length : correctCount) >= 100 && !achievements.includes('centurion')) newAchievements.push('centurion');
     if (completedChallengeDays.length >= 7 && !achievements.includes('consistent')) newAchievements.push('consistent');
-    if (currentScore / activeBatch.length >= 0.9 && !achievements.includes('scholar')) newAchievements.push('scholar');
+    if ((isLearnFinished || correctCount / activeBatch.length >= 0.9) && !achievements.includes('scholar')) newAchievements.push('scholar');
     
     if (newAchievements.length > 0) {
       setAchievements(prev => [...new Set([...prev, ...newAchievements])]);
@@ -760,7 +763,6 @@ export default function App() {
                           setAnswered({}); 
                           setShowResults(false);
                           setMode('quiz');
-                          setIsChallengeMode(false);
                           setIsWeakRevision(false);
                           setIsSidebarOpen(false);
                         }}
@@ -1143,7 +1145,29 @@ export default function App() {
         )}
 
         {!isWeakRevision && (
-          <div className="flex flex-col gap-6 mb-8">
+          <div className="flex flex-col gap-4 mb-8">
+            <div className={`flex p-1.5 rounded-2xl shadow-inner ${theme.secondary} border ${theme.border}`}>
+              {[
+                { id: 'ow', label: 'OWS' },
+                { id: 'sy', label: 'Synonyms' },
+                { id: 'id', label: 'Idioms' },
+                { id: 'pv', label: 'Phrasal' }
+              ].map(item => (
+                <button 
+                  key={item.id}
+                  onClick={() => { 
+                    setCat(item.id as Category); 
+                    setAnswered({}); 
+                    setShowResults(false);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${cat === item.id ? `${accent.bg} text-white shadow-lg` : 'opacity-40 hover:opacity-100'}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {isChallengeMode ? (
               Array.from({ length: TOTAL_PLAN_DAYS }).map((_, i) => {
@@ -1153,7 +1177,7 @@ export default function App() {
                   <button
                     key={i}
                     onClick={() => { setChallengeDay(day); setAnswered({}); setShowResults(false); }}
-                    className={`px-6 py-2 rounded-xl font-black text-[10px] tracking-widest whitespace-nowrap transition-all border ${
+                    className={`px-6 py-2 rounded-xl font-black text-[10px] tracking-widest whitespace-nowrap transition-all border flex items-center gap-2 ${
                       challengeDay === day 
                         ? `${accent.bg} ${accent.border} text-white shadow-lg ${accent.shadow}` 
                         : isCompleted 
@@ -1162,6 +1186,7 @@ export default function App() {
                     }`}
                   >
                     DAY {day}
+                    {isCompleted && <CheckCircle2 size={12} className={challengeDay === day ? 'text-white' : 'text-emerald-500'} />}
                   </button>
                 );
               })
@@ -1205,6 +1230,14 @@ export default function App() {
                 />
               );
             })}
+            {activeBatch.length > 0 && (
+               <button 
+                 onClick={finishSession}
+                 className={`w-full mt-10 py-5 text-white font-black text-lg rounded-3xl shadow-xl active:scale-[0.98] transition-all tracking-tighter ${accent.bg} ${accent.shadow} hover:brightness-110`}
+               >
+                 MARK AS LEARNED
+               </button>
+            )}
             {activeBatch.length === 0 && <p className="text-center opacity-30 py-20 font-bold italic">No data found in this set.</p>}
           </div>
         ) : (
@@ -1243,7 +1276,7 @@ export default function App() {
                     onClick={finishSession}
                     className={`w-full mt-10 py-5 text-white font-black text-lg rounded-3xl shadow-xl active:scale-[0.98] transition-all tracking-tighter ${accent.bg} ${accent.shadow} hover:brightness-110`}
                   >
-                    FINISH {isWeakRevision ? 'REVISION' : isChallengeMode ? `DAY ${challengeDay}` : `SET ${curSet + 1}`}
+                    FINISH {isWeakRevision ? 'REVISION' : isChallengeMode ? `DAY ${challengeDay} ${cat.toUpperCase()}` : `SET ${curSet + 1}`}
                   </button>
                 ) : (
                   <div className={`p-16 rounded-[3rem] text-center border-2 border-dashed ${theme.border} opacity-40`}>
@@ -1251,6 +1284,7 @@ export default function App() {
                     <p className="text-xs font-bold uppercase tracking-widest">Nothing here to master yet</p>
                   </div>
                 )}
+                <div className="h-32 pointer-events-none" />
               </>
             ) : (
               <motion.div 
@@ -1284,7 +1318,14 @@ export default function App() {
                       if (isWeakRevision) {
                          setIsWeakRevision(false);
                       } else if (isChallengeMode) {
-                         if (challengeDay < TOTAL_PLAN_DAYS) setChallengeDay(challengeDay + 1);
+                        const cats: Category[] = ['ow', 'sy', 'id', 'pv'];
+                        const idx = cats.indexOf(cat);
+                        if (idx < cats.length - 1) {
+                          setCat(cats[idx + 1]);
+                        } else {
+                          if (challengeDay < TOTAL_PLAN_DAYS) setChallengeDay(challengeDay + 1);
+                          setCat('ow');
+                        }
                       } else {
                         if (curSet < totalSets - 1) setCurSet(curSet + 1);
                       }
@@ -1294,7 +1335,7 @@ export default function App() {
                     }}
                     className={`py-5 font-black rounded-3xl transition-colors tracking-wide ${theme.secondary}`}
                   >
-                    {isWeakRevision ? 'BACK TO MAIN' : isChallengeMode ? 'NEXT DAY' : 'PROCEED TO NEXT'}
+                    {isWeakRevision ? 'BACK TO MAIN' : isChallengeMode ? 'NEXT TASK' : 'PROCEED TO NEXT'}
                   </button>
                 </div>
               </motion.div>
@@ -1303,6 +1344,8 @@ export default function App() {
         )}
         </motion.div>
       </main>
+
+      <div className="h-40 pointer-events-none" /> {/* Extra spacing for mobile devices */}
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
