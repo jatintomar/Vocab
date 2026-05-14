@@ -105,10 +105,18 @@ class VocabViewModel : ViewModel() {
             when(cat) {
                 "ow" -> _state.value.weakListOW
                 "sy" -> _state.value.weakListSY
-                else -> _state.value.weakListID
+                "id" -> _state.value.weakListID
+                "ph" -> _state.value.weakListPH
+                else -> emptyList()
             }
         } else {
-            val size = if (cat == "ow") 50 else 25
+            val size = when(cat) {
+                "ow" -> 50
+                "sy" -> 25
+                "id" -> 25
+                "ph" -> 10
+                else -> 25
+            }
             VocabRepository.getItemsForSet(cat, setIndex, size)
         }
 
@@ -116,6 +124,7 @@ class VocabViewModel : ViewModel() {
             val allAnswers = when(cat) {
                 "ow" -> VocabRepository.ows
                 "sy" -> VocabRepository.synonyms
+                "ph" -> VocabRepository.phrasal
                 else -> VocabRepository.idioms
             }.map { it.a }
             
@@ -146,7 +155,8 @@ class VocabViewModel : ViewModel() {
         val newState = currentState.copy(
             weakListOW = if (item.cat == "ow" && !currentState.weakListOW.contains(item)) currentState.weakListOW + item else currentState.weakListOW,
             weakListSY = if (item.cat == "sy" && !currentState.weakListSY.contains(item)) currentState.weakListSY + item else currentState.weakListSY,
-            weakListID = if (item.cat == "id" && !currentState.weakListID.contains(item)) currentState.weakListID + item else currentState.weakListID
+            weakListID = if (item.cat == "id" && !currentState.weakListID.contains(item)) currentState.weakListID + item else currentState.weakListID,
+            weakListPH = if (item.cat == "ph" && !currentState.weakListPH.contains(item)) currentState.weakListPH + item else currentState.weakListPH
         )
         _state.value = newState
     }

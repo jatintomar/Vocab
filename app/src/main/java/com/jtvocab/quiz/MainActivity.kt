@@ -39,9 +39,12 @@ import com.jtvocab.quiz.model.ClozeQuestion
 import com.jtvocab.quiz.model.PQRSQuestion
 import com.jtvocab.quiz.model.*
 
+import com.jtvocab.quiz.data.VocabRepository
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        VocabRepository.init(this)
         setContent {
             VocabTheme {
                 VocabApp()
@@ -172,7 +175,7 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                 ModeSelector(mode) { mode = it }
                 
                 if (mode != "comp") {
-                    SetSelector(currentSet = viewModel.currentSetIndex.value) { setIndex ->
+                    SetSelector(currentCat = cat, currentSet = viewModel.currentSetIndex.value) { setIndex ->
                         viewModel.startQuiz(cat, setIndex)
                     }
                 }
@@ -419,7 +422,24 @@ fun CatButton(label: String, isSelected: Boolean, modifier: Modifier = Modifier,
 }
 
 @Composable
-fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
+fun SetSelector(currentCat: String, currentSet: Int, onSelect: (Int) -> Unit) {
+    val size = when(currentCat) {
+        "ow" -> 50
+        "sy" -> 25
+        "id" -> 25
+        "ph" -> 10
+        else -> 25
+    }
+    val listSize = when(currentCat) {
+        "ow" -> VocabRepository.ows.size
+        "sy" -> VocabRepository.synonyms.size
+        "id" -> VocabRepository.idioms.size
+        "ph" -> VocabRepository.phrasal.size
+        else -> 0
+    }
+    val count = if (listSize > 0) (listSize + size - 1) / size else 10
+    val displayCount = minOf(count, 50) // Limit to 50 sets for UI sanity
+
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
@@ -427,7 +447,7 @@ fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(10) { index ->
+        items(displayCount) { index ->
             val setNum = index + 1
             val isSelected = currentSet == index
             Box(
@@ -440,7 +460,7 @@ fun SetSelector(currentSet: Int, onSelect: (Int) -> Unit) {
             ) {
                 Text(
                     "SET $setNum",
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(0.6f)
                 )
@@ -832,6 +852,22 @@ fun CompSection(viewModel: VocabViewModel) {
                 }
             }
         } else {
+            // Header
+            Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                Text(
+                    "AI COMPREHENSION",
+                    fontWeight = FontWeight.Black,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.6f)
+                )
+                Text(
+                    "Last Mile Challenge (2026 Pattern)",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
             // Navigation Bar for Comp types
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),

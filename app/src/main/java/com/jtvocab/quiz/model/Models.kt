@@ -20,9 +20,11 @@ data class AppState(
     val completedOWS: Set<Int> = emptySet(),
     val completedSY: Set<Int> = emptySet(),
     val completedID: Set<Int> = emptySet(),
+    val completedPH: Set<Int> = emptySet(),
     val weakListOW: List<VocabItem> = emptyList(),
     val weakListSY: List<VocabItem> = emptyList(),
     val weakListID: List<VocabItem> = emptyList(),
+    val weakListPH: List<VocabItem> = emptyList(),
     val accentColor: Long = 0xFF3B82F6, // Standard blue
     val theme: String = "Nordic",
     val achievements: List<Achievement> = listOf(

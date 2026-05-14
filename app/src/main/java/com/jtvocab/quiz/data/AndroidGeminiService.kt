@@ -5,6 +5,7 @@ import com.google.ai.client.generativeai.type.generationConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.util.UUID
 
 data class WordInsight(
     val word: String,
@@ -55,10 +56,10 @@ object AndroidGeminiService {
     suspend fun generatePQRS(): List<com.jtvocab.quiz.model.PQRSQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 (Last Mile Difficulty).
+            Generate 5 EXTREMELY CHALLENGING Parajumble (PQRS) questions for SSC CGL Tier 2 (Last Mile Challenge).
             Topic: Scientific breakthroughs, Philosophy, Global Economics, or High-level Literature.
             Include S1 (Fixed Start) and S6 (Fixed End) for all.
-            Sentences P, Q, R, S must be complex and logically dense.
+            Sentences P, Q, R, S must be complex, logically dense, and use advanced connectors (However, Moreover, Consequently, Albeit).
             Return ONLY a JSON array of objects with keys: "id", "s1", "s6", "sentences" (array of 4 strings labeled P:, Q:, R:, S:), "correctSequence" (e.g. "PRSQ"), "explanation".
         """.trimIndent()
         try {
@@ -85,8 +86,9 @@ object AndroidGeminiService {
     suspend fun generateCloze(): List<com.jtvocab.quiz.model.ClozeQuestion> = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext emptyList()
         val prompt = """
-            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2.
-            Difficulty: High (Extreme vocabulary like 'obfuscate', 'recalcitrant', 'infinitesimal').
+            Generate 2 Advanced Cloze Test passages (150-200 words each) for SSC CGL Tier 2 (Last Mile Level).
+            Difficulty: HIGH (Focus on vocabulary found in The Hindu editorials or Scientific journals).
+            Use words like 'obfuscate', 'recalcitrant', 'infinitesimal', 'paradigm', 'synergy'.
             Each passage should have 5 blanks.
             Return ONLY a JSON array of objects with keys: "id", "passage" (with (1), (2), etc. labels), "blanks" (array of objects with "index", "options", "answer", "explanation").
         """.trimIndent()
@@ -121,9 +123,12 @@ object AndroidGeminiService {
     suspend fun generateRC(): com.jtvocab.quiz.model.RCQuestion? = withContext(Dispatchers.IO) {
         if (apiKey.isEmpty()) return@withContext null
         val prompt = """
-            Generate 1 Full-Length High Difficulty Reading Comprehension passage (300 words+) for SSC CGL Tier 2.
-            Topic: Geopolitics, Quantum Physics simplified, or History of Enlightenment.
+            Generate 1 LONG High Difficulty Reading Comprehension passage (400-500 words) for SSC CGL Tier 2.
+            Topic: Geopolitics, Quantum Physics simplified, Global Economics, or History of Enlightenment.
             Include 5 complex questions requiring deep inference.
+            Provide:
+            1 Title/Theme question, 1 Inference question, 1 Fact-based question, 1 Vocabulary question (Synonym/Antonym from context), 1 Tone/Style question.
+            For each question, provide a "Smart Explanation" highlighting logical connectors or context clues.
             Return ONLY a JSON object with keys: "id", "passage", "questions" (array of objects with "q", "options", "a", "explanation").
         """.trimIndent()
         try {
