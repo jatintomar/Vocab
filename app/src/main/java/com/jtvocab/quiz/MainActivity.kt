@@ -227,6 +227,7 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
         }
     }
 }
+}
 
 @Composable
 fun SearchResultsSection(viewModel: VocabViewModel) {
@@ -977,8 +978,8 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
-            val isShowingThisInsight = isShowingThisInsight && insight != null
-            AnimatedVisibility(visible = isShowingThisInsight) {
+            val showInsight = isShowingThisInsight && insight != null
+            AnimatedVisibility(visible = showInsight) {
                 insight?.let { res ->
                     Column(
                         modifier = Modifier
