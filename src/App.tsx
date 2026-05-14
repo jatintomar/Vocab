@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search } from 'lucide-react';
-import { getWordInsight, WordInsight } from './services/geminiService';
 
 interface VocabItem {
   id: string;
@@ -107,8 +106,6 @@ interface Achievement {
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database, answered, showHint, onAnswer, onToggleHint, theme, themeKey, accent, globalSerial }) => {
-  const [insight, setInsight] = useState<WordInsight | null>(null);
-  const [loadingAI, setLoadingAI] = useState(false);
   const options = useMemo(() => {
     // Detect actual category from ID prefix
     let actualCat: Category = parentCat;
@@ -227,94 +224,6 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
         })}
       </div>
 
-      <AnimatePresence>
-        {state && (
-          <motion.div 
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="mt-6 flex flex-col gap-3"
-          >
-            <div className="flex gap-2">
-              <button 
-                onClick={async () => {
-                  if (insight) { setInsight(null); return; }
-                  setLoadingAI(true);
-                  const res = await getWordInsight(item.a, parentCat);
-                  setInsight(res);
-                  setLoadingAI(false);
-                }}
-                disabled={loadingAI}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
-              >
-                {loadingAI && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center backdrop-blur-md z-10"
-                  >
-                    <BrainCircuit size={16} className="animate-pulse text-white mr-2" />
-                    <span className="text-[8px] text-white">AI THINKING...</span>
-                  </motion.div>
-                )}
-                <Sparkles size={14} className={insight ? 'text-amber-400' : ''} />
-                {insight ? 'Hide AI Insight' : 'AI powered Context'}
-              </button>
-            </div>
-
-            {insight && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className={`p-5 rounded-3xl ${theme.secondary} border border-white/5 space-y-4 relative`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${accent.text}`}>
-                    <LayoutGrid size={10} /> SSC Exam Context 2026
-                  </span>
-                  <button 
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setLoadingAI(true);
-                      const res = await getWordInsight(item.a, parentCat, true);
-                      setInsight(res);
-                      setLoadingAI(false);
-                    }}
-                    disabled={loadingAI}
-                    className="p-1 rounded-md hover:bg-white/10 transition-colors opacity-40 hover:opacity-100"
-                  >
-                    <RotateCw size={10} className={loadingAI ? 'animate-spin' : ''} />
-                  </button>
-                </div>
-                <p className="text-xs leading-relaxed opacity-70 italic">"{insight.context}"</p>
-                <div className="h-px bg-white/5" />
-                <div className="space-y-1">
-                   <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
-                    <MessageSquareQuote size={10} /> Practical Usage
-                  </span>
-                  <p className="text-xs opacity-80 font-medium">"{insight.usage}"</p>
-                </div>
-                <div className="h-px bg-white/5" />
-                <div className="space-y-1">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-amber-500`}>
-                    <BrainCircuit size={10} /> Mnemonic Device
-                  </span>
-                  <p className="text-sm font-bold tracking-tight">{insight.mnemonic}</p>
-                </div>
-                {insight.synonyms && insight.synonyms.length > 0 && (
-                  <>
-                    <div className="h-px bg-white/5" />
-                    <div className="flex flex-wrap gap-1">
-                      {insight.synonyms.map((s, si) => (
-                        <span key={si} className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{s}</span>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {showHint[idx] && (
@@ -342,9 +251,6 @@ interface LearnCardProps {
 }
 
 const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, accent }) => {
-  const [insight, setInsight] = useState<WordInsight | null>(null);
-  const [loadingAI, setLoadingAI] = useState(false);
-
   return (
     <div key={item.id} className={`p-4 rounded-[1.5rem] border transition-all shadow-sm ${theme.card} ${theme.border}`}>
       <div className="flex justify-between items-start mb-1">
@@ -353,75 +259,6 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
       </div>
       <p className={`text-sm font-medium leading-relaxed opacity-80 mb-4`}>{item.a}</p>
       
-      <div className="flex flex-col gap-3">
-        <button 
-          onClick={async () => {
-            if (insight) { setInsight(null); return; }
-            setLoadingAI(true);
-            const res = await getWordInsight(item.a, cat);
-            setInsight(res);
-            setLoadingAI(false);
-          }}
-          disabled={loadingAI}
-          className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/5 ${theme.secondary} hover:bg-white/5 transition-colors relative overflow-hidden`}
-        >
-          {loadingAI && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-indigo-600/30 flex items-center justify-center backdrop-blur-md z-10"
-            >
-              <BrainCircuit size={16} className="animate-pulse text-white mr-2" />
-              <span className="text-[8px] text-white">GENERATING AI INSIGHT...</span>
-            </motion.div>
-          )}
-          <Sparkles size={14} className={insight ? 'text-amber-400' : ''} />
-          {insight ? 'Hide AI Context' : 'AI Context & Mnemonic'}
-        </button>
-
-        {insight && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`p-4 rounded-2xl ${theme.secondary} border border-white/5 space-y-3 relative`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 ${accent.text}`}>
-                <LayoutGrid size={10} /> Exam Context 2026
-              </span>
-              <button 
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  setLoadingAI(true);
-                  const res = await getWordInsight(item.a, cat, true);
-                  setInsight(res);
-                  setLoadingAI(false);
-                }}
-                disabled={loadingAI}
-                className="p-1 rounded-md hover:bg-white/10 transition-colors opacity-40 hover:opacity-100"
-              >
-                <RotateCw size={10} className={loadingAI ? 'animate-spin' : ''} />
-              </button>
-            </div>
-            <p className="text-[10px] leading-relaxed opacity-70 italic">{insight.context}</p>
-            <div className="h-px bg-white/5" />
-            <div className="space-y-1">
-                <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
-                <MessageSquareQuote size={10} /> Usage example
-              </span>
-              <p className="text-[9px] opacity-80 font-medium italic">"{insight.usage}"</p>
-            </div>
-            <div className="h-px bg-white/5" />
-            <div className="space-y-1">
-              <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-amber-500`}>
-                <BrainCircuit size={10} /> Mnemonic Device
-              </span>
-              <p className="text-[10px] font-bold tracking-tight">{insight.mnemonic}</p>
-            </div>
-          </motion.div>
-        )}
-      </div>
-
       <div className={`mt-3 pt-3 border-t ${theme.border} opacity-40 flex justify-between items-center text-xs`}>
         <p className={`font-bold uppercase tracking-widest flex items-center gap-2 ${accent.text}`}>
           <Star size={12} /> {item.h}
@@ -490,14 +327,14 @@ export default function App() {
 
   // Search Logic
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() || !database) {
       setSearchResults([]);
       return;
     }
     const query = searchQuery.toLowerCase();
     const results: VocabItem[] = [];
     ['ow', 'sy', 'id', 'pv'].forEach(cat => {
-      const list = vocabData[cat as keyof typeof vocabData] || [];
+      const list = database[cat as Category] || [];
       const filtered = list.filter(item => 
         item.w.toLowerCase().includes(query) || 
         item.a.toLowerCase().includes(query) ||
@@ -506,7 +343,7 @@ export default function App() {
       results.push(...filtered.map(item => ({ ...item, cat })));
     });
     setSearchResults(results.slice(0, 50)); // Limit for performance
-  }, [searchQuery]);
+  }, [searchQuery, database]);
 
   const stats = useMemo(() => {
     if (!database) return { total: 0, mastered: 0 };

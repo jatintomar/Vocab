@@ -1,6 +1,8 @@
 package com.jtvocab.quiz.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
@@ -9,7 +11,9 @@ import com.jtvocab.quiz.model.VocabItem
 import com.jtvocab.quiz.model.AppState
 import com.jtvocab.quiz.data.VocabRepository
 
-class VocabViewModel : ViewModel() {
+class VocabViewModel(application: Application) : AndroidViewModel(application) {
+    private val prefs = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
     private val _state = mutableStateOf(AppState())
     val state: State<AppState> = _state
 
@@ -21,15 +25,6 @@ class VocabViewModel : ViewModel() {
 
     private val _score = mutableStateOf(0)
     val score: State<Int> = _score
-
-    private val _loadingAI = mutableStateOf(false)
-    val loadingAI: State<Boolean> = _loadingAI
-
-    private val _currentInsight = mutableStateOf<com.jtvocab.quiz.data.WordInsight?>(null)
-    val currentInsight: State<com.jtvocab.quiz.data.WordInsight?> = _currentInsight
-
-    private val _dailyPulse = mutableStateOf<org.json.JSONObject?>(null)
-    val dailyPulse: State<org.json.JSONObject?> = _dailyPulse
 
     private val _searchQuery = mutableStateOf("")
     val searchQuery: State<String> = _searchQuery
@@ -59,25 +54,6 @@ class VocabViewModel : ViewModel() {
     }
 
     init {
-        fetchDailyPulse()
-    }
-
-    private fun fetchDailyPulse() {
-        viewModelScope.launch {
-            _dailyPulse.value = com.jtvocab.quiz.data.AndroidGeminiService.getDailyInsight()
-        }
-    }
-
-    fun fetchInsight(word: String, category: String) {
-        viewModelScope.launch {
-            _loadingAI.value = true
-            _currentInsight.value = com.jtvocab.quiz.data.AndroidGeminiService.getWordInsight(word, category)
-            _loadingAI.value = false
-        }
-    }
-
-    fun clearInsight() {
-        _currentInsight.value = null
     }
 
     data class QuizItem(

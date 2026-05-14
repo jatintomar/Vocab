@@ -663,6 +663,11 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
                 Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
                 Spacer(Modifier.height(32.dp))
 
+                // Existing bottom actions (Export/Import) if we wanted to keep them
+                // But you only need the Divider probably
+                Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
+                Spacer(Modifier.height(32.dp))
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     SettingsActionButton(Icons.Default.KeyboardArrowDown, "EXPORT", modifier = Modifier.weight(1f))
                     SettingsActionButton(Icons.Default.KeyboardArrowUp, "IMPORT", modifier = Modifier.weight(1f))
@@ -866,9 +871,6 @@ fun QuizSection(viewModel: VocabViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
-    val insight by viewModel.currentInsight
-    val loadingAI by viewModel.loadingAI
-    val isShowingThisInsight = insight?.word == quiz.item.w
     var showHint by remember { mutableStateOf(false) }
 
     Card(
@@ -956,49 +958,6 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
 
             Spacer(Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.1f), RoundedCornerShape(16.dp))
-                    .clickable { 
-                        if (isShowingThisInsight) viewModel.clearInsight() 
-                        else {
-                            val wordToFetch = if (quiz.item.cat == "ow") quiz.item.a else quiz.item.w
-                            viewModel.fetchInsight(wordToFetch, quiz.item.cat)
-                        }
-                    }
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (loadingAI && isShowingThisInsight) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                } else {
-                    Icon(Icons.Default.Star, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
-            val showInsight = isShowingThisInsight && insight != null
-            AnimatedVisibility(visible = showInsight) {
-                insight?.let { res ->
-                    Column(
-                        modifier = Modifier
-                            .padding(top = 16.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(20.dp))
-                            .padding(16.dp)
-                    ) {
-                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-                        Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
-                        Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-            }
         }
     }
 }
@@ -1073,10 +1032,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel) {
-    val insight by viewModel.currentInsight
-    val loadingAI by viewModel.loadingAI
     val item = quiz.item
-    val isShowingThisInsight = insight?.word == (if (item.cat == "ow") item.a else item.w)
 
     Card(
         modifier = Modifier
@@ -1113,55 +1069,6 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
             )
 
             Spacer(Modifier.height(14.dp))
-
-            // AI Button
-            Surface(
-                onClick = { 
-                    if (isShowingThisInsight) viewModel.clearInsight() 
-                    else {
-                        val wordToFetch = if (item.cat == "ow") item.a else item.w
-                        viewModel.fetchInsight(wordToFetch, item.cat)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(0.02f),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.06f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (loadingAI && isShowingThisInsight) {
-                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = MaterialTheme.colorScheme.primary)
-                    } else {
-                        Icon(Icons.Default.Star, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(6.dp))
-                        Text("AI CONTEXT & MNEMONIC", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
-                    }
-                }
-            }
-
-            // AI Content
-            AnimatedVisibility(visible = isShowingThisInsight && insight != null) {
-                insight?.let { ins ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primary.copy(0.04f))
-                            .padding(10.dp)
-                    ) {
-                        Text("MNEMONIC", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text(ins.mnemonic, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
-                        Spacer(Modifier.height(6.dp))
-                        Text("EXAM CONTEXT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                        Text(ins.context, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
-                    }
-                }
-            }
 
             Spacer(Modifier.height(12.dp))
             Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
