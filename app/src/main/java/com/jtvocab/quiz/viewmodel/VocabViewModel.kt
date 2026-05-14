@@ -52,11 +52,7 @@ class VocabViewModel : ViewModel() {
     fun generateComp() {
         viewModelScope.launch {
             _loadingComp.value = true
-            val pqrs = com.jtvocab.quiz.data.AndroidGeminiService.generatePQRS()
-            kotlinx.coroutines.delay(500)
-            val cloze = com.jtvocab.quiz.data.AndroidGeminiService.generateCloze()
-            kotlinx.coroutines.delay(500)
-            val rc = com.jtvocab.quiz.data.AndroidGeminiService.generateRC()
+            val (pqrs, cloze, rc) = com.jtvocab.quiz.data.AndroidGeminiService.generateAllComp()
             
             if (pqrs.isNotEmpty()) _dailyPQRS.value = pqrs
             if (cloze.isNotEmpty()) _dailyCloze.value = cloze
@@ -124,10 +120,11 @@ class VocabViewModel : ViewModel() {
     val challengeDay: State<Int> = _challengeDay
 
     fun setChallengeMode(enabled: Boolean) {
+        val wasChallenge = _isChallengeMode.value
         _isChallengeMode.value = enabled
         if (enabled) {
             startChallengeQuiz(_challengeDay.value)
-        } else {
+        } else if (wasChallenge) {
             _currentQuizBatch.value = emptyList()
             _score.value = 0
         }

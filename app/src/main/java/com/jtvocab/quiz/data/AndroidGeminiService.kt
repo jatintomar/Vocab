@@ -26,6 +26,106 @@ object AndroidGeminiService {
         }
     )
 
+    suspend fun generateAllComp(): Triple<List<com.jtvocab.quiz.model.PQRSQuestion>, List<com.jtvocab.quiz.model.ClozeQuestion>, com.jtvocab.quiz.model.RCQuestion?> = withContext(Dispatchers.IO) {
+        if (apiKey.isEmpty()) return@withContext Triple(emptyList(), emptyList(), null)
+        
+        val prompt = """
+            Generate exactly 3 parajumble (PQRS) questions, exactly 1 Advanced Cloze Test passage, and exactly 1 Reading Comprehension passage for SSC CGL 2026.
+            
+            Return ONLY a valid JSON object with matches the following structure:
+            {
+              "pqrs": [ 
+                { "id": "uuid", "s1": "start text", "s6": "end text", "sentences": ["P...", "Q...", "R...", "S..."], "correctSequence": "PQRS", "explanation": "text", "logicalConnectors": ["pivot", "next"] }
+              ],
+              "cloze": [
+                { "id": "uuid", "passage": "text with (1), (2)...", "blanks": [ { "index": 1, "options": ["A", "B", "C", "D"], "answer": "correct", "explanation": "why" } ] }
+              ],
+              "rc": {
+                "id": "uuid", "passage": "long text", "questions": [ { "q": "text", "options": ["A", "B", "C", "D"], "a": "correct", "explanation": "why" } ]
+              }
+            }
+            Ensure the quality reflects the 2026 SSC CGL pattern.
+        """.trimIndent()
+
+        try {
+            val response = model.generateContent(prompt)
+            val cleaned = response.text?.replace("```json", "")?.replace("```", "")?.trim() ?: "{}"
+            val root = JSONObject(cleaned)
+            
+            // Parse PQRS
+            val pqrsList = mutableListOf<com.jtvocab.quiz.model.PQRSQuestion>()
+            val pqrsArr = root.optJSONArray("pqrs")
+            if (pqrsArr != null) {
+                for (i in 0 until pqrsArr.length()) {
+                    val obj = pqrsArr.getJSONObject(i)
+                    val sArr = obj.getJSONArray("sentences")
+                    val connectorsArr = obj.optJSONArray("logicalConnectors")
+                    pqrsList.add(com.jtvocab.quiz.model.PQRSQuestion(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        s1 = obj.optString("s1", null),
+                        s6 = obj.optString("s6", null),
+                        sentences = List(sArr.length()) { sArr.getString(it) },
+                        correctSequence = obj.getString("correctSequence"),
+                        explanation = obj.getString("explanation"),
+                        logicalConnectors = if(connectorsArr != null) List(connectorsArr.length()) { connectorsArr.getString(it) } else emptyList()
+                    ))
+                }
+            }
+
+            // Parse Cloze
+            val clozeList = mutableListOf<com.jtvocab.quiz.model.ClozeQuestion>()
+            val clozeArr = root.optJSONArray("cloze")
+            if (clozeArr != null) {
+                for (i in 0 until clozeArr.length()) {
+                    val obj = clozeArr.getJSONObject(i)
+                    val bArr = obj.getJSONArray("blanks")
+                    val blanks = List(bArr.length()) { j ->
+                        val bObj = bArr.getJSONObject(j)
+                        val oArr = bObj.getJSONArray("options")
+                        com.jtvocab.quiz.model.ClozeQuestion.Blank(
+                            index = bObj.getInt("index"),
+                            options = List(oArr.length()) { oArr.getString(it) },
+                            answer = bObj.getString("answer"),
+                            explanation = bObj.getString("explanation")
+                        )
+                    }
+                    clozeList.add(com.jtvocab.quiz.model.ClozeQuestion(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        passage = obj.getString("passage"),
+                        blanks = blanks
+                    ))
+                }
+            }
+
+            // Parse RC
+            var rcResult: com.jtvocab.quiz.model.RCQuestion? = null
+            val rcObj = root.optJSONObject("rc")
+            if (rcObj != null) {
+                val qsArr = rcObj.getJSONArray("questions")
+                val qs = List(qsArr.length()) { i ->
+                    val qObj = qsArr.getJSONObject(i)
+                    val oArr = qObj.getJSONArray("options")
+                    com.jtvocab.quiz.model.RCQuestion.RCSubQuestion(
+                        q = qObj.getString("q"),
+                        options = List(oArr.length()) { oArr.getString(it) },
+                        a = qObj.getString("a"),
+                        explanation = qObj.getString("explanation")
+                    )
+                }
+                rcResult = com.jtvocab.quiz.model.RCQuestion(
+                    id = rcObj.optString("id", UUID.randomUUID().toString()),
+                    passage = rcObj.getString("passage"),
+                    questions = qs
+                )
+            }
+
+            Triple(pqrsList, clozeList, rcResult)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Triple(com.jtvocab.quiz.data.VocabRepository.dailyPQRS, com.jtvocab.quiz.data.VocabRepository.dailyCloze, com.jtvocab.quiz.data.VocabRepository.dailyRC)
+        }
+    }
+
     suspend fun getWordInsight(word: String, category: String): WordInsight? = withContext(Dispatchers.IO) {
         val fallback = WordInsight(
             word = word,

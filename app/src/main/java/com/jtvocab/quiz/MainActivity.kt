@@ -157,6 +157,9 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                         viewModel.setChallengeMode(true)
                         scope.launch { drawerState.close() }
                     },
+                    onWeakListClick = {
+                        viewModel.startQuiz("weak", -1, isWeakMode = true)
+                    },
                     onSettingsOpen = {
                         showSettings = true
                         scope.launch { drawerState.close() }
@@ -291,6 +294,7 @@ fun DashboardContent(
     onCatSelect: (String) -> Unit,
     onModeSelect: (String) -> Unit,
     onChallengeClick: () -> Unit,
+    onWeakListClick: () -> Unit,
     onSettingsOpen: () -> Unit,
     onClose: () -> Unit
 ) {
@@ -380,7 +384,7 @@ fun DashboardContent(
             isSelected = false,
             color = MaterialTheme.colorScheme.error,
             onClick = { 
-                viewModel.startQuiz("weak", -1, isWeakMode = true)
+                onWeakListClick()
                 onModeSelect("quiz") 
             }
         )
@@ -663,8 +667,7 @@ fun QuizSection(viewModel: VocabViewModel) {
                     .padding(vertical = 12.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.onSurface.copy(0.05f))
-                    .padding(horizontal = 20.dp, vertical = 12.dp)
-                    .clickable { viewModel.setChallengeMode(false) },
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -761,12 +764,17 @@ fun QuizCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMode
                     Spacer(Modifier.width(4.dp))
                     Text("#${index + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
                 }
-                Icon(
-                    Icons.Default.Info, 
-                    null, 
-                    tint = if (showHint) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary, 
-                    modifier = Modifier.size(16.dp).clickable { showHint = !showHint }
-                )
+                androidx.compose.material3.IconButton(
+                    onClick = { showHint = !showHint },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info, 
+                        null, 
+                        tint = if (showHint) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary, 
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -890,7 +898,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 
     LazyColumn(
         state = listState,
-        verticalArrangement = Arrangement.spacedBy(6.dp), 
+        verticalArrangement = Arrangement.spacedBy(16.dp), 
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         itemsIndexed(items = quizItems) { index, quizItem ->
@@ -904,47 +912,125 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
                 }
                 Text(
                     label,
-                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-                    fontSize = 10.sp,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 12.dp, start = 8.dp),
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 2.sp
                 )
             }
-            Card(
+            
+            LearnCard(index, quizItem, viewModel)
+        }
+    }
+}
+
+@Composable
+fun LearnCard(index: Int, quiz: QuizItem, viewModel: VocabViewModel) {
+    val insight by viewModel.currentInsight
+    val loadingAI by viewModel.loadingAI
+    val item = quiz.item
+    val isShowingThisInsight = insight?.word == (if (item.cat == "ow") item.a else item.w)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    if (item.cat == "id") item.w else item.a,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    "#${index + 1}",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.3f)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            
+            Text(
+                if (item.cat == "id") item.a else item.w,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(0.7f),
+                lineHeight = 20.sp
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // AI Button
+            Surface(
+                onClick = { 
+                    if (isShowingThisInsight) viewModel.clearInsight() 
+                    else {
+                        val wordToFetch = if (item.cat == "ow") item.a else item.w
+                        viewModel.fetchInsight(wordToFetch, item.cat)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.05f))
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.onSurface.copy(0.03f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(0.08f))
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("#${index + 1}", fontSize = 9.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        if (quizItem.item.cat == "id") {
-                            Text(quizItem.item.w, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
-                            Text(quizItem.item.a, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f), lineHeight = 14.sp)
-                            Spacer(Modifier.height(2.dp))
-                            Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
-                        } else {
-                            Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text(quizItem.item.w, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.6f), lineHeight = 14.sp)
-                            Spacer(Modifier.height(2.dp))
-                            Text(quizItem.item.h, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
-                        }
+                    if (loadingAI && isShowingThisInsight) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                    } else {
+                        Icon(Icons.Default.Star, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.6f))
                     }
                 }
+            }
+
+            // AI Content
+            AnimatedVisibility(visible = isShowingThisInsight && insight != null) {
+                insight?.let { ins ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(0.05f))
+                            .padding(12.dp)
+                    ) {
+                        Text("MNEMONIC", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(ins.mnemonic, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                        Spacer(Modifier.height(8.dp))
+                        Text("EXAM CONTEXT", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(ins.context, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
+            Spacer(Modifier.height(12.dp))
+
+            // Hindi Meaning Section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.FavoriteBorder, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary.copy(0.5f))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    item.h,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary.copy(0.8f)
+                )
             }
         }
     }
@@ -1172,7 +1258,7 @@ fun ClozeSingleView(cloze: ClozeQuestion, index: Int, total: Int, onPrev: () -> 
 @Composable
 fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(20.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item {
+        item(key = rc.id) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
@@ -1195,56 +1281,58 @@ fun RCCard(rc: com.jtvocab.quiz.model.RCQuestion) {
                     
                     Spacer(Modifier.height(32.dp))
                     rc.questions.forEachIndexed { i, q ->
-                        var selectedOption by remember { mutableStateOf<String?>(null) }
-                        var isAnswered by remember { mutableStateOf(false) }
+                        key(rc.id + i) {
+                            var selectedOption by remember(rc.id + i) { mutableStateOf<String?>(null) }
+                            var isAnswered by remember(rc.id + i) { mutableStateOf(false) }
 
-                        Column(modifier = Modifier.padding(bottom = 24.dp)) {
-                            Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Spacer(Modifier.height(12.dp))
-                            q.options.forEach { option ->
-                                val isSelected = selectedOption == option
-                                val isCorrect = option == q.a
+                            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                                Text("Q${i+1}: ${q.q}", fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Spacer(Modifier.height(12.dp))
+                                q.options.forEach { option ->
+                                    val isSelected = selectedOption == option
+                                    val isCorrect = option == q.a
+                                    
+                                    val borderColor = when {
+                                        isAnswered && isCorrect -> Color(0xFF10B981)
+                                        isSelected && !isCorrect -> Color(0xFFEF4444)
+                                        isSelected -> MaterialTheme.colorScheme.primary
+                                        else -> MaterialTheme.colorScheme.onSurface.copy(0.05f)
+                                    }
+
+                                    Surface(
+                                        onClick = { 
+                                            if (!isAnswered) {
+                                                selectedOption = option
+                                                isAnswered = true
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, borderColor),
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.05f) else Color.Transparent
+                                    ) {
+                                        Text(
+                                            option, 
+                                            modifier = Modifier.padding(16.dp), 
+                                            fontSize = 13.sp, 
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, 
+                                            color = when {
+                                                isAnswered && isCorrect -> Color(0xFF10B981)
+                                                isSelected && !isCorrect -> Color(0xFFEF4444)
+                                                else -> MaterialTheme.colorScheme.onSurface
+                                            }
+                                        )
+                                    }
+                                }
                                 
-                                val borderColor = when {
-                                    isAnswered && isCorrect -> Color(0xFF10B981)
-                                    isSelected && !isCorrect -> Color(0xFFEF4444)
-                                    isSelected -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.onSurface.copy(0.05f)
-                                }
-
-                                Surface(
-                                    onClick = { 
-                                        if (!isAnswered) {
-                                            selectedOption = option
-                                            isAnswered = true
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    border = BorderStroke(1.dp, borderColor),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(0.05f) else Color.Transparent
-                                ) {
-                                    Text(
-                                        option, 
-                                        modifier = Modifier.padding(16.dp), 
-                                        fontSize = 13.sp, 
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium, 
-                                        color = when {
-                                            isAnswered && isCorrect -> Color(0xFF10B981)
-                                            isSelected && !isCorrect -> Color(0xFFEF4444)
-                                            else -> MaterialTheme.colorScheme.onSurface
-                                        }
-                                    )
-                                }
-                            }
-                            
-                            AnimatedVisibility(visible = isAnswered) {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f))
-                                ) {
-                                    Text(q.explanation, modifier = Modifier.padding(12.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                                AnimatedVisibility(visible = isAnswered) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                                        shape = RoundedCornerShape(16.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(0.05f))
+                                    ) {
+                                        Text(q.explanation, modifier = Modifier.padding(12.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.8f))
+                                    }
                                 }
                             }
                         }
@@ -1280,10 +1368,11 @@ fun ClozeCard(cloze: ClozeQuestion) {
             
             Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 cloze.blanks.forEach { blank ->
-                    var selectedOption by remember { mutableStateOf<String?>(null) }
-                    var isAnswered by remember { mutableStateOf(false) }
+                    key(cloze.id + blank.index) {
+                        var selectedOption by remember(cloze.id + blank.index) { mutableStateOf<String?>(null) }
+                        var isAnswered by remember(cloze.id + blank.index) { mutableStateOf(false) }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier.size(32.dp).clip(CircleShape).background(
@@ -1358,8 +1447,8 @@ fun ClozeCard(cloze: ClozeQuestion) {
 
 @Composable
 fun PQRSCard(pqrs: PQRSQuestion) {
-    var selectedOption by remember { mutableStateOf<String?>(null) }
-    var isAnswered by remember { mutableStateOf(false) }
+    var selectedOption by remember(pqrs.id) { mutableStateOf<String?>(null) }
+    var isAnswered by remember(pqrs.id) { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // S1 Label
