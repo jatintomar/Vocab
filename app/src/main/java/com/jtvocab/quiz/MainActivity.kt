@@ -1171,12 +1171,7 @@ fun LearnCard(index: Int, quiz: VocabViewModel.QuizItem, viewModel: VocabViewMod
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.FavoriteBorder, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary.copy(0.5f))
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    item.h,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary.copy(0.8f)
-                )
+                Text(item.h, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.8f))
             }
         }
     }
