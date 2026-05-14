@@ -267,11 +267,28 @@ const QuizCard: React.FC<QuizCardProps> = ({ item, idx, cat: parentCat, database
                 </div>
                 <div className="h-px bg-white/5" />
                 <div className="space-y-1">
+                   <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
+                    <MessageSquareQuote size={10} /> Practical Usage
+                  </span>
+                  <p className="text-xs opacity-80 font-medium">"{insight.usage}"</p>
+                </div>
+                <div className="h-px bg-white/5" />
+                <div className="space-y-1">
                   <span className={`text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-amber-500`}>
                     <BrainCircuit size={10} /> Mnemonic Device
                   </span>
                   <p className="text-sm font-bold tracking-tight">{insight.mnemonic}</p>
                 </div>
+                {insight.synonyms && insight.synonyms.length > 0 && (
+                  <>
+                    <div className="h-px bg-white/5" />
+                    <div className="flex flex-wrap gap-1">
+                      {insight.synonyms.map((s, si) => (
+                        <span key={si} className="text-[8px] bg-white/5 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{s}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
           </motion.div>
@@ -342,6 +359,13 @@ const LearnCard: React.FC<LearnCardProps> = ({ item, cat, globalSerial, theme, a
                 <LayoutGrid size={10} /> Exam Context 2026
               </span>
               <p className="text-[11px] leading-relaxed opacity-70 italic">{insight.context}</p>
+            </div>
+            <div className="h-px bg-white/5" />
+            <div className="space-y-1">
+                <span className={`text-[8px] font-black uppercase tracking-[0.2em] flex items-center gap-2 text-indigo-400`}>
+                <MessageSquareQuote size={10} /> Usage example
+              </span>
+              <p className="text-[10px] opacity-80 font-medium italic">"{insight.usage}"</p>
             </div>
             <div className="h-px bg-white/5" />
             <div className="space-y-1">
@@ -1124,10 +1148,9 @@ export default function App() {
           </div>
         )}
 
-        {/* Set Tabs or Challenge Days */}
         {!isWeakRevision && mode !== 'comp' && (
-          <div className="flex flex-col gap-4 mb-4">
-            <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex flex-col gap-6 mb-8">
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {isChallengeMode ? (
               Array.from({ length: TOTAL_PLAN_DAYS }).map((_, i) => {
                 const day = i + 1;
@@ -1235,7 +1258,7 @@ export default function App() {
               const globalSerial = idx + 1 + (curSet * SET_SIZE);
               return (
                 <LearnCard 
-                  key={item.id}
+                  key={`${item.id}-${idx}`}
                   item={item}
                   cat={cat}
                   globalSerial={globalSerial}
@@ -1260,7 +1283,7 @@ export default function App() {
 
                   return (
                     <QuizCard 
-                      key={item.id}
+                      key={`${item.id}-${idx}`}
                       item={item}
                       idx={idx}
                       cat={itemCat}

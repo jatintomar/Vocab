@@ -16,16 +16,20 @@ function getAI() {
 export interface WordInsight {
   context: string;
   mnemonic: string;
+  usage: string;
+  synonyms: string[];
 }
 
 export async function getWordInsight(word: string, category: string): Promise<WordInsight> {
   const ai = getAI();
   const prompt = `
     Analyze the following English word: "${word}" (Category: ${category}).
-    Provide two things:
-    1. A brief "SSC Exam Context": How this word has been used in previous SSC (CHSL/CGL) exams or its typical usage patterns in such exams for 2026 preparation.
-    2. A clever Mnemonic: A memory trick to remember its meaning.
-    Return the response in valid JSON.
+    Provide:
+    1. "SSC Exam Context": Typical usage in exams.
+    2. "Mnemonic": Memory trick.
+    3. "Example Sentence": A clear, high-yield sentence.
+    4. "Top 3 Synonyms": Comma separated.
+    Return as JSON.
   `;
 
   try {
@@ -39,8 +43,10 @@ export async function getWordInsight(word: string, category: string): Promise<Wo
           properties: {
             context: { type: Type.STRING },
             mnemonic: { type: Type.STRING },
+            usage: { type: Type.STRING },
+            synonyms: { type: Type.ARRAY, items: { type: Type.STRING } },
           },
-          required: ["context", "mnemonic"],
+          required: ["context", "mnemonic", "usage", "synonyms"],
         },
       },
     });
@@ -49,8 +55,48 @@ export async function getWordInsight(word: string, category: string): Promise<Wo
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      context: "Context unavailable at the moment. Focus on the core meaning for now.",
-      mnemonic: "Memory is a muscle. Repeat the word 5 times to lock it in!",
+      context: "Context unavailable. Focus on core meaning.",
+      mnemonic: "Repetition is key!",
+      usage: `Success requires mastering words like ${word}.`,
+      synonyms: ["Similar terms", "N/A"]
+    };
+  }
+}
+
+export async function getDailyInsight(): Promise<{ word: string, insight: string, usage: string }> {
+  const ai = getAI();
+  const prompt = `
+    Provide a "Daily Vocabulary Pulse" for an SSC aspirant prepring for 2026.
+    Pick one very important high-yield word and provide:
+    1. The word itself.
+    2. A "Power Insight": Why this word is crucial specifically for competitive exams.
+    3. A "Modern Usage": How it might appear in a current 2026 news context.
+    Return as JSON.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            word: { type: Type.STRING },
+            insight: { type: Type.STRING },
+            usage: { type: Type.STRING },
+          },
+          required: ["word", "insight", "usage"],
+        },
+      },
+    });
+    return JSON.parse(response.text);
+  } catch (error) {
+    return {
+      word: "Persistence",
+      insight: "Consistency is more important than intensity in SSC prep.",
+      usage: "The candidate's persistence in mastering idioms paid off in the final tier."
     };
   }
 }
