@@ -32,8 +32,7 @@ object AndroidGeminiService {
             Provide:
             1. An usage context (sentence) specifically for SSC Exam 2026.
             2. A powerful mnemonic (memory trick) to remember it forever.
-            3. 3 synonyms.
-            Return ONLY a valid JSON object with keys: "context", "mnemonic", "synonyms" (array).
+            Return ONLY a valid JSON object with keys: "context", "mnemonic".
         """.trimIndent()
 
         try {
@@ -43,9 +42,7 @@ object AndroidGeminiService {
             WordInsight(
                 context = json.optString("context", "No context available"),
                 mnemonic = json.optString("mnemonic", "No mnemonic available"),
-                synonyms = (0 until json.optJSONArray("synonyms")?.length()!!).map { 
-                    json.optJSONArray("synonyms")?.optString(it) ?: ""
-                }
+                synonyms = emptyList()
             )
         } catch (e: Exception) {
             e.printStackTrace()

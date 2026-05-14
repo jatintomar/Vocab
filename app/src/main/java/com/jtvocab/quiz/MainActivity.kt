@@ -339,19 +339,10 @@ fun QuizCard(quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer:
                         Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
                         Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
                         
-                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
+                        Divider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
                         
                         Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
                         Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        
-                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
-                        
-                        Text("RELATED SYNONYMS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF472B6))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            res.synonyms.forEach { syn ->
-                                Text(syn, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White.copy(0.5f))
-                            }
-                        }
                     }
                 }
             }
@@ -370,7 +361,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
     }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(quizItems) { quiz ->
+        items(items = quizItems) { quizItem ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -388,13 +379,13 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(quiz.item.a.take(1).uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(quizItem.item.a.take(1).uppercase(), fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(quiz.item.a, fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
-                        Text(quiz.item.w, fontSize = 12.sp, color = Color.Gray, lineHeight = 16.sp)
+                        Text(quizItem.item.a, fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.White)
+                        Text(quizItem.item.w, fontSize = 12.sp, color = Color.Gray, lineHeight = 16.sp)
                         Spacer(Modifier.height(4.dp))
-                        Text(quiz.item.h, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
+                        Text(quizItem.item.h, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(0.7f))
                     }
                 }
             }
@@ -405,6 +396,7 @@ fun LearnSection(viewModel: VocabViewModel, cat: String) {
 @Composable
 fun CompSection(viewModel: VocabViewModel) {
     val pqrs by viewModel.dailyPQRS
+    val cloze by viewModel.dailyCloze
     
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -412,6 +404,33 @@ fun CompSection(viewModel: VocabViewModel) {
         }
         item {
             PQRSCard(pqrs)
+        }
+        item {
+            ClozeCard(cloze)
+        }
+    }
+}
+
+@Composable
+fun ClozeCard(cloze: ClozeQuestion) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(32.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Text("CLOZE TEST", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
+            Spacer(Modifier.height(12.dp))
+            Text(cloze.passage, fontSize = 14.sp, lineHeight = 20.sp)
+            
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("Solve Passage", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
