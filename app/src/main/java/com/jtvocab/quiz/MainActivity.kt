@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -214,7 +215,7 @@ fun QuizSection(viewModel: VocabViewModel) {
             ChallengeCard()
         }
         itemsIndexed(quizItems) { index, quiz ->
-            QuizCard(quiz) { viewModel.submitAnswer(index, it) }
+            QuizCard(quiz, viewModel) { viewModel.submitAnswer(index, it) }
         }
     }
 }
@@ -247,7 +248,10 @@ fun ChallengeCard() {
 }
 
 @Composable
-fun QuizCard(quiz: VocabViewModel.QuizItem, onAnswer: (String) -> Unit) {
+fun QuizCard(quiz: VocabViewModel.QuizItem, viewModel: VocabViewModel, onAnswer: (String) -> Unit) {
+    val insight by viewModel.currentInsight
+    val loadingAI by viewModel.loadingAI
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
@@ -257,10 +261,17 @@ fun QuizCard(quiz: VocabViewModel.QuizItem, onAnswer: (String) -> Unit) {
         Column(Modifier.padding(24.dp)) {
             Text(
                 quiz.item.w,
-                fontSize = 20.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
-                lineHeight = 28.sp
+                lineHeight = 32.sp
+            )
+            Text(
+                quiz.item.h,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary.copy(0.6f),
+                modifier = Modifier.padding(top = 4.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -277,22 +288,71 @@ fun QuizCard(quiz: VocabViewModel.QuizItem, onAnswer: (String) -> Unit) {
                     onClick = { onAnswer(option) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = color)
+                    colors = ButtonDefaults.buttonColors(containerColor = color),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
                 ) {
                     Text(
                         option,
-                        modifier = Modifier.padding(vertical = 4.dp),
+                        modifier = Modifier.padding(vertical = 6.dp),
                         fontWeight = FontWeight.Bold,
-                        color = if (quiz.isAnswered && (isCorrect || isSelected)) Color.White else Color.White.copy(0.8f)
+                        color = if (quiz.isAnswered && (isCorrect || isSelected)) Color.White else Color.White.copy(0.7f)
                     )
                 }
             }
             
-            if (quiz.isAnswered) {
-                Spacer(Modifier.height(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Info, null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                    Text(quiz.item.h, color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+            
+            // AI Action Button
+            Button(
+                onClick = { 
+                    if (insight != null) viewModel.clearInsight() 
+                    else viewModel.fetchInsight(quiz.item.a, quiz.item.cat)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (loadingAI) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.secondary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("AI THINKING...", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    } else {
+                        Icon(Icons.Default.Star, null, tint = if (insight != null) Color(0xFFF59E0B) else Color.White, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (insight != null) "HIDE AI CONTEXT" else "AI CONTEXT & MNEMONIC", fontSize = 10.sp, fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+
+            AnimatedVisibility(visible = insight != null) {
+                insight?.let { res ->
+                    Column(
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.03f))
+                            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text("EXAM CONTEXT 2026", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
+                        Text(res.context, fontSize = 12.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.White.copy(0.7f))
+                        
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
+                        
+                        Text("MNEMONIC (MEMORY TRICK)", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFF60A5FA))
+                        Text(res.mnemonic, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        
+                        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color.White.copy(0.05f))
+                        
+                        Text("RELATED SYNONYMS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = Color(0xFFF472B6))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            res.synonyms.forEach { syn ->
+                                Text(syn, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White.copy(0.5f))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -366,11 +426,11 @@ fun PQRSCard(pqrs: PQRSQuestion) {
         Column(Modifier.padding(24.dp)) {
             Text("PQRS (PARAJUMBLES)", fontWeight = FontWeight.Black, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
             Spacer(Modifier.height(12.dp))
-            pqrs.s1?.let { Text(it, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+            pqrs.s1?.let { s1Text -> Text(s1Text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
             pqrs.sentences.forEach { sentence ->
                 Text(sentence, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
             }
-            pqrs.s6?.let { Text(it, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
+            pqrs.s6?.let { s6Text -> Text(s6Text, fontWeight = FontWeight.Bold, fontSize = 14.sp) }
             
             Spacer(Modifier.height(24.dp))
             Button(

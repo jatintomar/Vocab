@@ -1,8 +1,10 @@
 package com.jtvocab.quiz.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.State
+import kotlinx.coroutines.launch
 import com.jtvocab.quiz.model.VocabItem
 import com.jtvocab.quiz.model.AppState
 import com.jtvocab.quiz.model.PQRSQuestion
@@ -21,6 +23,24 @@ class VocabViewModel : ViewModel() {
 
     private val _dailyCloze = mutableStateOf(VocabRepository.dailyCloze[0])
     val dailyCloze: State<ClozeQuestion> = _dailyCloze
+
+    private val _loadingAI = mutableStateOf(false)
+    val loadingAI: State<Boolean> = _loadingAI
+
+    private val _currentInsight = mutableStateOf<com.jtvocab.quiz.data.WordInsight?>(null)
+    val currentInsight: State<com.jtvocab.quiz.data.WordInsight?> = _currentInsight
+
+    fun fetchInsight(word: String, category: String) {
+        viewModelScope.launch {
+            _loadingAI.value = true
+            _currentInsight.value = com.jtvocab.quiz.data.AndroidGeminiService.getWordInsight(word, category)
+            _loadingAI.value = false
+        }
+    }
+
+    fun clearInsight() {
+        _currentInsight.value = null
+    }
 
     data class QuizItem(
         val item: VocabItem,
