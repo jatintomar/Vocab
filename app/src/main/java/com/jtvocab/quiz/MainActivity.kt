@@ -227,7 +227,6 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
         }
     }
 }
-}
 
 @Composable
 fun SearchResultsSection(viewModel: VocabViewModel) {
