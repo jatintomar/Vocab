@@ -391,22 +391,33 @@ export default function App() {
 
   useEffect(() => {
     let url = githubDataUrl.trim();
+    const cacheBuster = `?t=${Date.now()}`;
+    
     if (!url) {
       url = '/assets/data.json';
     }
     
-    fetch(url)
+    // Ensure URL has cache buster if it's external or local
+    const targetUrl = url.includes('?') ? url + '&' + cacheBuster.slice(1) : url + cacheBuster;
+
+    fetch(targetUrl)
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
       })
-      .then(data => setDatabase(data))
+      .then(data => {
+        setDatabase(data);
+        console.log('✅ Vocab data loaded successfully');
+      })
       .catch(err => {
-        console.warn('Failed to load vocab data from URL, falling back to local asset:', err);
-        return fetch('/assets/data.json')
+        console.warn('❌ Failed to load vocab data from URL, falling back to local asset:', err);
+        fetch('/assets/data.json' + cacheBuster)
           .then(res => res.json())
-          .then(data => setDatabase(data))
-          .catch(e => console.error('Failed to load local vocab data:', e));
+          .then(data => {
+            setDatabase(data);
+            console.log('✅ Local fallback data loaded');
+          })
+          .catch(e => console.error('🔥 CRITICAL: Failed to load local vocab data:', e));
       });
   }, [githubDataUrl]);
 
@@ -532,25 +543,46 @@ export default function App() {
 
   if (!database) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${theme.bg}`}>
+      <div className="fixed inset-0 z-50">
         <motion.div 
-          animate={{ 
-            scale: [1, 1.1, 1],
-            opacity: [0.3, 1, 0.3]
-          }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className={`text-4xl font-black italic tracking-tighter mb-8 ${accent.text}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className={`absolute inset-0 z-[100] flex flex-col items-center justify-center ${theme.bg}`}
         >
-          JT VOCAB
-        </motion.div>
-        <div className="w-48 h-1 bg-black/20 rounded-full overflow-hidden">
           <motion.div 
-            initial={{ x: '-100%' }}
-            animate={{ x: '100%' }}
-            transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-            className={`w-full h-full ${accent.bg}`}
-          />
-        </div>
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative"
+          >
+             <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className={`absolute -inset-12 border-2 border-dashed ${accent.border} opacity-20 rounded-full`}
+             />
+             <motion.div 
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [0.6, 1, 0.6]
+                }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className={`text-6xl font-black italic tracking-tighter mb-4 ${accent.text}`}
+              >
+                JT VOCAB
+              </motion.div>
+          </motion.div>
+          
+          <div className="w-56 h-1.5 bg-white/5 rounded-full overflow-hidden mt-8">
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+              className={`w-full h-full ${accent.bg}`}
+            />
+          </div>
+          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Synchronizing Lexicon</p>
+        </motion.div>
       </div>
     );
   }
@@ -762,16 +794,31 @@ export default function App() {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Sync Data from GitHub</p>
-                  <input
-                    type="text"
-                    placeholder="Raw GitHub data.json URL"
-                    value={githubDataUrl}
-                    onChange={(e) => setGithubDataUrl(e.target.value)}
-                    className="w-full bg-black/10 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-mono"
-                    style={{ borderColor: `var(--${accent.bg.split('-')[1]})` }}
-                  />
-                  <p className="text-xs opacity-50">App will fallback to local data if this URL is invalid.</p>
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Sync Data from GitHub</p>
+                    <button 
+                      onClick={() => { setGithubDataUrl(''); window.location.reload(); }}
+                      className={`text-[9px] font-black uppercase tracking-tighter underline ${accent.text} opacity-60 hover:opacity-100`}
+                    >
+                      Reset to Local
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Raw GitHub data.json URL"
+                      value={githubDataUrl}
+                      onChange={(e) => setGithubDataUrl(e.target.value)}
+                      className="w-full bg-black/10 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-mono"
+                      style={{ borderColor: `var(--${accent.bg.split('-')[1]})` }}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                       <div className={`w-2 h-2 rounded-full ${githubDataUrl ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                    </div>
+                  </div>
+                  <p className="text-xs opacity-50">
+                    {githubDataUrl ? 'Using remote source. Issues? Use "Reset to Local".' : 'Using verified local asset (public/assets/data.json).'}
+                  </p>
                 </div>
 
                 <div className="space-y-3">
