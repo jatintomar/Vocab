@@ -1,4 +1,3 @@
-const fetch = require('node:fetch');
 (async () => {
     try {
         const res = await fetch('https://api.github.com/users/jatintomar028/repos', {
