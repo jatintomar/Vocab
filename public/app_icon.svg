@@ -1,29 +1,42 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <linearGradient id="bg_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E293B"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="icon_grad" x1="120" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feGaussianBlur stdDeviation="12" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#0D1117"/>
-  <!-- Book Spine -->
-  <rect x="80" y="60" width="40" height="392" rx="8" fill="#1F2937" stroke="#374151" stroke-width="2"/>
-  <!-- Book Cover -->
-  <rect x="120" y="60" width="312" height="392" rx="8" fill="#111827" stroke="#374151" stroke-width="4"/>
-  <!-- Lightbulb Base -->
-  <rect x="236" y="290" width="40" height="25" rx="4" fill="#9CA3AF" />
-  <rect x="240" y="315" width="32" height="10" rx="2" fill="#6B7280" />
-  <!-- Glowing Lightbulb -->
-  <path d="M256 160C222.863 160 196 186.863 196 220C196 244.3 210.5 265.2 231.5 274.5L231.5 290L280.5 290L280.5 274.5C301.5 265.2 316 244.3 316 220C316 186.863 289.137 160 256 160Z" fill="#F97316" filter="url(#glow)"/>
-  <circle cx="256" cy="220" r="30" fill="#FB923C" />
-  <!-- Text -->
-  <text x="256" y="410" font-family="Arial, sans-serif" font-weight="bold" font-size="28" fill="#F97316" text-anchor="middle">JT VOCAB QUIZ</text>
-  <!-- Rays -->
-  <g stroke="#FB923C" stroke-width="6" stroke-linecap="round">
-    <line x1="256" y1="130" x2="256" y2="100" />
-    <line x1="326" y1="170" x2="356" y2="150" />
-    <line x1="386" y1="220" x2="356" y2="220" />
-    <line x1="186" y1="170" x2="156" y2="150" />
-    <line x1="126" y1="220" x2="156" y2="220" />
-  </g>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="120" fill="url(#bg_grad)"/>
+  
+  <!-- Stylized Book / Tablet -->
+  <rect x="100" y="80" width="312" height="352" rx="24" fill="#1E293B" stroke="#334155" stroke-width="4"/>
+  <rect x="130" y="110" width="252" height="292" rx="12" fill="#0F172A" stroke="#334155" stroke-width="2"/>
+
+  <!-- Logo Mark: Stylized "V" with Lightbulb -->
+  <path d="M190 180L256 310L322 180" stroke="url(#icon_grad)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+  
+  <!-- Glowing Pulse Center -->
+  <circle cx="256" cy="220" r="40" fill="url(#icon_grad)" filter="url(#glow)" opacity="0.8">
+    <animate attributeName="r" values="35;45;35" dur="3s" repeatCount="indefinity" />
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinity" />
+  </circle>
+
+  <!-- Inner Spark -->
+  <circle cx="256" cy="220" r="15" fill="white" filter="url(#glow)"/>
+
+  <!-- Bottom Brand Text -->
+  <text x="256" y="470" font-family="Inter, sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle" letter-spacing="4">JT VOCAB</text>
+  
+  <!-- Decorative corner accents -->
+  <path d="M80 150V100H130" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <path d="M432 362V412H382" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
 </svg>

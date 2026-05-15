@@ -276,9 +276,7 @@ export default function App() {
   const [mode, setMode] = useState<AppMode>('quiz');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cat, setCat] = useState<Category>('ow');
-  const [categoryLastSets, setCategoryLastSets] = useState<Record<Category, number>>({ ow: 0, sy: 0, id: 0, pv: 0 });
-  const curSet = categoryLastSets[cat] || 0;
-  const setCurSet = (val: number, targetCat?: Category) => setCategoryLastSets(prev => ({ ...prev, [targetCat || cat]: val }));
+  const [curSet, setCurSet] = useState(0);
   const [streak, setStreak] = useState(3);
   const [themeKey, setThemeKey] = useState<ThemeKey>('deepsea');
   const [accentKey, setAccentKey] = useState<AccentKey>('blue');
@@ -286,7 +284,6 @@ export default function App() {
   const [isWeakRevision, setIsWeakRevision] = useState(false);
   const [isChallengeMode, setIsChallengeMode] = useState(false);
   const [challengeDay, setChallengeDay] = useState(1);
-  const [githubDataUrl, setGithubDataUrl] = useState('');
   
   const [answered, setAnswered] = useState<Record<number, { selected: string; correct: boolean }>>({});
   const [completedSets, setCompletedSets] = useState<Record<Category, number[]>>({ ow: [], sy: [], id: [], pv: [] });
@@ -312,9 +309,8 @@ export default function App() {
       return list.slice(start, end);
     }
     let list = database[cat];
-    const curSet = categoryLastSets[cat] || 0;
     return list.slice(curSet * SET_SIZE, (curSet + 1) * SET_SIZE);
-  }, [cat, categoryLastSets, database, isWeakRevision, weakList, isChallengeMode, challengeDay]);
+  }, [cat, curSet, database, isWeakRevision, weakList, isChallengeMode, challengeDay]);
 
   const totalSets = useMemo(() => {
     if (!database) return 0;
@@ -390,39 +386,25 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let url = githubDataUrl.trim();
     const cacheBuster = `?t=${Date.now()}`;
-    
-    if (!url) {
-      url = '/assets/data.json';
-    }
-    
-    // Ensure URL has cache buster if it's external or local
-    const targetUrl = url.includes('?') ? url + '&' + cacheBuster.slice(1) : url + cacheBuster;
+    const url = '/assets/data.json' + cacheBuster;
 
-    fetch(targetUrl)
+    fetch(url)
       .then(res => {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
       })
       .then(data => {
         setDatabase(data);
-        console.log('✅ Vocab data loaded successfully');
+        console.log('✅ Vocab data loaded successfully from local assets');
       })
       .catch(err => {
-        console.warn('❌ Failed to load vocab data from URL, falling back to local asset:', err);
-        fetch('/assets/data.json' + cacheBuster)
-          .then(res => res.json())
-          .then(data => {
-            setDatabase(data);
-            console.log('✅ Local fallback data loaded');
-          })
-          .catch(e => console.error('🔥 CRITICAL: Failed to load local vocab data:', e));
+        console.error('🔥 CRITICAL: Failed to load local vocab data:', err);
       });
-  }, [githubDataUrl]);
+  }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem('jt_vocab_v2');
+    const saved = localStorage.getItem('jt_vocab_v3');
     if (saved) {
       const parsed = JSON.parse(saved);
       setStreak(parsed.streak ?? 3);
@@ -432,7 +414,6 @@ export default function App() {
       setActivityHistory(parsed.activityHistory || {});
       setAchievements(parsed.achievements || []);
       setChallengeDay(parsed.challengeDay || 1);
-      if (parsed.githubDataUrl) setGithubDataUrl(parsed.githubDataUrl);
       if (parsed.themeKey && THEMES[parsed.themeKey as ThemeKey]) {
         setThemeKey(parsed.themeKey as ThemeKey);
       }
@@ -442,17 +423,14 @@ export default function App() {
       if (parsed.cat) {
         setCat(parsed.cat as Category);
       }
-      if (parsed.categoryLastSets) {
-        setCategoryLastSets(parsed.categoryLastSets);
-      } else if (typeof parsed.curSet === 'number') {
-        // Migration for old structure
-        setCategoryLastSets(prev => ({ ...prev, [parsed.cat || 'ow']: parsed.curSet }));
+      if (parsed.curSet !== undefined) {
+        setCurSet(parsed.curSet);
       }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('jt_vocab_v2', JSON.stringify({ 
+    localStorage.setItem('jt_vocab_v3', JSON.stringify({ 
       streak, 
       completedSets, 
       weakList, 
@@ -463,10 +441,9 @@ export default function App() {
       achievements,
       challengeDay,
       cat,
-      categoryLastSets,
-      githubDataUrl
+      curSet
     }));
-  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, categoryLastSets, githubDataUrl]);
+  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, curSet]);
 
   const handleAnswer = (qIdx: number, item: VocabItem, choice: string) => {
     if (answered[qIdx]) return;
@@ -510,7 +487,6 @@ export default function App() {
       }
     } else if (!isWeakRevision && (correctCount >= threshold || isLearnFinished)) {
        setCompletedSets(prev => {
-         const curSet = categoryLastSets[cat] || 0;
          const currentCompleted = prev[cat] || [];
          if (currentCompleted.includes(curSet)) return prev;
          return { ...prev, [cat]: [...currentCompleted, curSet] };
@@ -606,11 +582,16 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans transition-all duration-500 overflow-x-hidden ${theme.bg} ${theme.text} relative`}>
       <AnimatePresence>
-        {isLoaded && (
+        {isLoaded && database && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, scale: 0.95, y: 30, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ 
+              duration: 1.2, 
+              ease: [0.22, 1, 0.36, 1],
+              opacity: { duration: 0.8 },
+              filter: { duration: 0.8 }
+            }}
           >
             {/* Background Dynamic Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -794,31 +775,16 @@ export default function App() {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Sync Data from GitHub</p>
-                    <button 
-                      onClick={() => { setGithubDataUrl(''); window.location.reload(); }}
-                      className={`text-[9px] font-black uppercase tracking-tighter underline ${accent.text} opacity-60 hover:opacity-100`}
-                    >
-                      Reset to Local
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Raw GitHub data.json URL"
-                      value={githubDataUrl}
-                      onChange={(e) => setGithubDataUrl(e.target.value)}
-                      className="w-full bg-black/10 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-mono"
-                      style={{ borderColor: `var(--${accent.bg.split('-')[1]})` }}
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                       <div className={`w-2 h-2 rounded-full ${githubDataUrl ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Data Integrity</p>
+                  <div className="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                       <CheckCircle2 size={16} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-tighter">Verified Local Asset</p>
+                      <p className="text-[9px] opacity-50">App is running on native system data.</p>
                     </div>
                   </div>
-                  <p className="text-xs opacity-50">
-                    {githubDataUrl ? 'Using remote source. Issues? Use "Reset to Local".' : 'Using verified local asset (public/assets/data.json).'}
-                  </p>
                 </div>
 
                 <div className="space-y-3">
