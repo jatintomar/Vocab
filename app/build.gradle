@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace "com.jtvocab.quiz"
     compileSdk 34
 
     defaultConfig {
