@@ -272,6 +272,7 @@ export default function App() {
   const SET_SIZE = 50;
   const TOTAL_PLAN_DAYS = 75;
 
+  const [isLoaded, setIsLoaded] = useState(false);
   const [mode, setMode] = useState<AppMode>('quiz');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [cat, setCat] = useState<Category>('ow');
@@ -285,6 +286,7 @@ export default function App() {
   const [isWeakRevision, setIsWeakRevision] = useState(false);
   const [isChallengeMode, setIsChallengeMode] = useState(false);
   const [challengeDay, setChallengeDay] = useState(1);
+  const [githubDataUrl, setGithubDataUrl] = useState('');
   
   const [answered, setAnswered] = useState<Record<number, { selected: string; correct: boolean }>>({});
   const [completedSets, setCompletedSets] = useState<Record<Category, number[]>>({ ow: [], sy: [], id: [], pv: [] });
@@ -383,11 +385,32 @@ export default function App() {
   }, [activeBatch, answered, showResults, currentQuestionIdx, isSidebarOpen]);
 
   useEffect(() => {
-    fetch('/assets/data.json')
-      .then(res => res.json())
-      .then(data => setDatabase(data))
-      .catch(err => console.error('Failed to load vocab data:', err));
+    const timer = setTimeout(() => setIsLoaded(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
 
+  useEffect(() => {
+    let url = githubDataUrl.trim();
+    if (!url) {
+      url = '/assets/data.json';
+    }
+    
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => setDatabase(data))
+      .catch(err => {
+        console.warn('Failed to load vocab data from URL, falling back to local asset:', err);
+        return fetch('/assets/data.json')
+          .then(res => res.json())
+          .then(data => setDatabase(data))
+          .catch(e => console.error('Failed to load local vocab data:', e));
+      });
+  }, [githubDataUrl]);
+
+  useEffect(() => {
     const saved = localStorage.getItem('jt_vocab_v2');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -398,6 +421,7 @@ export default function App() {
       setActivityHistory(parsed.activityHistory || {});
       setAchievements(parsed.achievements || []);
       setChallengeDay(parsed.challengeDay || 1);
+      if (parsed.githubDataUrl) setGithubDataUrl(parsed.githubDataUrl);
       if (parsed.themeKey && THEMES[parsed.themeKey as ThemeKey]) {
         setThemeKey(parsed.themeKey as ThemeKey);
       }
@@ -428,9 +452,10 @@ export default function App() {
       achievements,
       challengeDay,
       cat,
-      categoryLastSets
+      categoryLastSets,
+      githubDataUrl
     }));
-  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, categoryLastSets]);
+  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, categoryLastSets, githubDataUrl]);
 
   const handleAnswer = (qIdx: number, item: VocabItem, choice: string) => {
     if (answered[qIdx]) return;
@@ -548,7 +573,14 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans transition-all duration-500 overflow-x-hidden ${theme.bg} ${theme.text} relative`}>
-      {/* Background Dynamic Effects */}
+      <AnimatePresence>
+        {isLoaded && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {/* Background Dynamic Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <motion.div 
           animate={{ 
@@ -729,6 +761,19 @@ export default function App() {
               </div>
 
               <div className="space-y-6">
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Sync Data from GitHub</p>
+                  <input
+                    type="text"
+                    placeholder="Raw GitHub data.json URL"
+                    value={githubDataUrl}
+                    onChange={(e) => setGithubDataUrl(e.target.value)}
+                    className="w-full bg-black/10 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-all font-mono"
+                    style={{ borderColor: `var(--${accent.bg.split('-')[1]})` }}
+                  />
+                  <p className="text-xs opacity-50">App will fallback to local data if this URL is invalid.</p>
+                </div>
+
                 <div className="space-y-3">
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Accent Color</p>
                   <div className="flex flex-wrap gap-2">
@@ -1255,6 +1300,9 @@ export default function App() {
       </main>
 
       <div className="h-40 pointer-events-none" /> {/* Extra spacing for mobile devices */}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
