@@ -298,7 +298,7 @@ export default function App() {
       const parsed = JSON.parse(saved);
       if (parsed.streak !== undefined) return parsed.streak;
     }
-    return 3;
+    return 0;
   });
   const [score, setScore] = useState(() => {
     const saved = localStorage.getItem('jt_vocab_v3');

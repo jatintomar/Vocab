@@ -965,8 +965,8 @@ fun QuizSection(viewModel: VocabViewModel) {
                 Spacer(Modifier.width(24.dp))
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("STREAK", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                    Text(state.streak.toString() + " 🔥", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text(state.score.toString(), fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
