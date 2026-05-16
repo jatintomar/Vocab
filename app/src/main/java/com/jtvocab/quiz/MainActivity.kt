@@ -41,6 +41,14 @@ import kotlinx.coroutines.launch
 import android.app.Activity
 import com.jtvocab.quiz.viewmodel.VocabViewModel
 import com.jtvocab.quiz.model.*
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.em
 
 import com.jtvocab.quiz.data.VocabRepository
 
@@ -124,15 +132,6 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
         }
     )
 }
-
-import kotlinx.coroutines.delay
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.unit.em
 
 @Composable
 fun VocabSplashScreen(onTimeout: () -> Unit) {
