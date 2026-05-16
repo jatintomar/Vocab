@@ -125,11 +125,147 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
     )
 }
 
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.em
+
+@Composable
+fun VocabSplashScreen(onTimeout: () -> Unit) {
+    val alphaAnim = remember { Animatable(1f) }
+    
+    LaunchedEffect(Unit) {
+        delay(2000)
+        alphaAnim.animateTo(0f, animationSpec = tween(800))
+        onTimeout()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .graphicsLayer(alpha = alphaAnim.value),
+        contentAlignment = Alignment.Center
+    ) {
+        val infiniteTransition = rememberInfiniteTransition(label = "splash")
+        val rotation1 by infiniteTransition.animateFloat(
+            initialValue = 0f, 
+            targetValue = 360f, 
+            animationSpec = infiniteRepeatable(tween(15000, easing = LinearEasing)),
+            label = "rot1"
+        )
+        val rotation2 by infiniteTransition.animateFloat(
+            initialValue = 0f, 
+            targetValue = -360f, 
+            animationSpec = infiniteRepeatable(tween(25000, easing = LinearEasing)),
+            label = "rot2"
+        )
+        val colorScheme = MaterialTheme.colorScheme
+        
+        Box(contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.size(200.dp).graphicsLayer(rotationZ = rotation1)) {
+                drawCircle(
+                    color = colorScheme.primary.copy(alpha = 0.5f),
+                    style = Stroke(width = 4.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f)))
+                )
+            }
+            
+            Canvas(modifier = Modifier.size(260.dp).graphicsLayer(rotationZ = rotation2)) {
+                drawCircle(
+                    color = colorScheme.primary.copy(alpha = 0.2f),
+                    style = Stroke(width = 2.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)))
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .background(colorScheme.primary, RoundedCornerShape(24.dp))
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                val letterSpacingAnim = remember { Animatable(0f) }
+                LaunchedEffect(Unit) {
+                    delay(400)
+                    letterSpacingAnim.animateTo(0.2f, tween(1000, easing = FastOutSlowInEasing))
+                }
+                
+                Text(
+                    text = "JT VOCAB",
+                    color = colorScheme.primary,
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Black,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    letterSpacing = letterSpacingAnim.value.em
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp, start = 48.dp, end = 48.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val progressAnim by infiniteTransition.animateFloat(
+                initialValue = -1f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
+                label = "prog"
+            )
+            
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.05f))
+            ) {
+                val widthPx = constraints.maxWidth.toFloat()
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(0.5f)
+                        .graphicsLayer(translationX = progressAnim * widthPx)
+                        .background(colorScheme.primary)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+             Text(
+                "NEURAL LEXICON LOADING",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.4.em,
+                color = colorScheme.onSurface.copy(alpha = 0.3f)
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VocabApp(viewModel: VocabViewModel = viewModel()) {
-    var mode by remember { mutableStateOf("quiz") } // quiz, learn
-    var cat by remember { mutableStateOf("ow") } // ow, sy, id
+    var showSplash by remember { mutableStateOf(true) }
+    
+    if (showSplash) {
+        VocabSplashScreen(onTimeout = { showSplash = false })
+    } else {
+        var mode by remember { mutableStateOf("quiz") } // quiz, learn
+        var cat by remember { mutableStateOf("ow") } // ow, sy, id
     val state by viewModel.state
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -242,6 +378,7 @@ fun VocabApp(viewModel: VocabViewModel = viewModel()) {
                 }
             }
         }
+    }
     }
 }
 
