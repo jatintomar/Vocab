@@ -273,13 +273,42 @@ export default function App() {
   const TOTAL_PLAN_DAYS = 75;
 
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
   const [mode, setMode] = useState<AppMode>('quiz');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [cat, setCat] = useState<Category>('ow');
-  const [curSet, setCurSet] = useState(0);
+  const [cat, setCat] = useState<Category>(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.cat) return parsed.cat as Category;
+    }
+    return 'ow';
+  });
+  const [curSet, setCurSet] = useState(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.curSet !== undefined) return parsed.curSet;
+    }
+    return 0;
+  });
   const [streak, setStreak] = useState(3);
-  const [themeKey, setThemeKey] = useState<ThemeKey>('deepsea');
-  const [accentKey, setAccentKey] = useState<AccentKey>('blue');
+  const [themeKey, setThemeKey] = useState<ThemeKey>(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.themeKey && THEMES[parsed.themeKey as ThemeKey]) return parsed.themeKey;
+    }
+    return 'deepsea';
+  });
+  const [accentKey, setAccentKey] = useState<AccentKey>(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.accentKey && ACCENTS[parsed.accentKey as AccentKey]) return parsed.accentKey;
+    }
+    return 'blue';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isWeakRevision, setIsWeakRevision] = useState(false);
   const [isChallengeMode, setIsChallengeMode] = useState(false);
@@ -381,7 +410,10 @@ export default function App() {
   }, [activeBatch, answered, showResults, currentQuestionIdx, isSidebarOpen]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 150);
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+      setTimeout(() => setShowSplashScreen(false), 2000); // Keep splash for 2s
+    }, 150);
     return () => clearTimeout(timer);
   }, []);
 
@@ -414,18 +446,6 @@ export default function App() {
       setActivityHistory(parsed.activityHistory || {});
       setAchievements(parsed.achievements || []);
       setChallengeDay(parsed.challengeDay || 1);
-      if (parsed.themeKey && THEMES[parsed.themeKey as ThemeKey]) {
-        setThemeKey(parsed.themeKey as ThemeKey);
-      }
-      if (parsed.accentKey && ACCENTS[parsed.accentKey as AccentKey]) {
-        setAccentKey(parsed.accentKey as AccentKey);
-      }
-      if (parsed.cat) {
-        setCat(parsed.cat as Category);
-      }
-      if (parsed.curSet !== undefined) {
-        setCurSet(parsed.curSet);
-      }
     }
   }, []);
 
@@ -517,48 +537,88 @@ export default function App() {
     }
   };
 
-  if (!database) {
+  if (!database || showSplashScreen) {
     return (
-      <div className="fixed inset-0 z-50">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className={`absolute inset-0 z-[100] flex flex-col items-center justify-center ${theme.bg}`}
-        >
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="relative"
-          >
-             <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className={`absolute -inset-12 border-2 border-dashed ${accent.border} opacity-20 rounded-full`}
-             />
-             <motion.div 
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  opacity: [0.6, 1, 0.6]
-                }}
-                transition={{ repeat: Infinity, duration: 2 }}
-                className={`text-6xl font-black italic tracking-tighter mb-4 ${accent.text}`}
-              >
-                JT VOCAB
-              </motion.div>
-          </motion.div>
-          
-          <div className="w-56 h-1.5 bg-white/5 rounded-full overflow-hidden mt-8">
+      <div className="fixed inset-0 z-[100] overflow-hidden">
+        <AnimatePresence>
+          {showSplashScreen && (
             <motion.div 
-              initial={{ x: '-100%' }}
-              animate={{ x: '100%' }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-              className={`w-full h-full ${accent.bg}`}
-            />
-          </div>
-          <p className="mt-4 text-[10px] font-black uppercase tracking-[0.3em] opacity-30">Synchronizing Lexicon</p>
-        </motion.div>
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeInOut" }}
+              className={`absolute inset-0 flex flex-col items-center justify-center ${theme.bg}`}
+            >
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                className="relative"
+              >
+                 <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className={`absolute -inset-16 border-2 border-dashed ${accent.border} opacity-10 rounded-full`}
+                 />
+                 <motion.div 
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className={`absolute -inset-24 border border-dotted ${accent.border} opacity-5 rounded-full`}
+                 />
+                 
+                 <div className="flex flex-col items-center relative z-10">
+                   <motion.div 
+                      key="splash-logo"
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.8 }}
+                      className="flex items-center gap-4 mb-4"
+                    >
+                      <div className={`p-4 rounded-3xl ${accent.bg} shadow-2xl ${accent.shadow}`}>
+                        <Sparkles className="text-white" size={40} />
+                      </div>
+                    </motion.div>
+                    
+                    <motion.div 
+                      initial={{ letterSpacing: "0em", opacity: 0 }}
+                      animate={{ letterSpacing: "0.2em", opacity: 1 }}
+                      transition={{ delay: 0.4, duration: 1 }}
+                      className={`text-5xl font-black italic tracking-tighter ${accent.text} flex`}
+                    >
+                      {"JT VOCAB".split("").map((char, i) => (
+                        <motion.span
+                          key={i}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5 + (i * 0.05) }}
+                        >
+                          {char === " " ? "\u00A0" : char}
+                        </motion.span>
+                      ))}
+                    </motion.div>
+                 </div>
+              </motion.div>
+              
+              <div className="absolute bottom-20 left-0 right-0 px-12 space-y-4">
+                <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ x: '-100%' }}
+                    animate={{ x: '100%' }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                    className={`w-full h-full ${accent.bg}`}
+                  />
+                </div>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.3 }}
+                  transition={{ delay: 1 }}
+                  className="text-center text-[10px] font-black uppercase tracking-[0.4em]"
+                >
+                  Neural Lexicon Loading
+                </motion.p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

@@ -1,42 +1,11 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bg_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#1E293B"/>
-      <stop offset="1" stop-color="#0F172A"/>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="icon_grad" x1="120" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#60A5FA"/>
-      <stop offset="1" stop-color="#3B82F6"/>
-    </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="12" result="blur" />
-      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-    </filter>
   </defs>
-
-  <!-- Background -->
-  <rect width="512" height="512" rx="120" fill="url(#bg_grad)"/>
-  
-  <!-- Stylized Book / Tablet -->
-  <rect x="100" y="80" width="312" height="352" rx="24" fill="#1E293B" stroke="#334155" stroke-width="4"/>
-  <rect x="130" y="110" width="252" height="292" rx="12" fill="#0F172A" stroke="#334155" stroke-width="2"/>
-
-  <!-- Logo Mark: Stylized "V" with Lightbulb -->
-  <path d="M190 180L256 310L322 180" stroke="url(#icon_grad)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-  
-  <!-- Glowing Pulse Center -->
-  <circle cx="256" cy="220" r="40" fill="url(#icon_grad)" filter="url(#glow)" opacity="0.8">
-    <animate attributeName="r" values="35;45;35" dur="3s" repeatCount="indefinity" />
-    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="3s" repeatCount="indefinity" />
-  </circle>
-
-  <!-- Inner Spark -->
-  <circle cx="256" cy="220" r="15" fill="white" filter="url(#glow)"/>
-
-  <!-- Bottom Brand Text -->
-  <text x="256" y="470" font-family="Inter, sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle" letter-spacing="4">JT VOCAB</text>
-  
-  <!-- Decorative corner accents -->
-  <path d="M80 150V100H130" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
-  <path d="M432 362V412H382" stroke="#3B82F6" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+  <rect width="100%" height="100%" rx="24" fill="url(#grad)" />
+  <path d="M30 35 L50 25 L70 35 L70 65 L50 75 L30 65 Z" fill="white" opacity="0.9" />
+  <circle cx="50" cy="50" r="10" fill="#3b82f6" />
 </svg>
