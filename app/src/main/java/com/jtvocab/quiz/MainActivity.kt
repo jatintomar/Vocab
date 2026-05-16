@@ -668,6 +668,21 @@ fun DashboardContent(
             Spacer(Modifier.width(16.dp))
             Text("APP SETTINGS", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), fontSize = 14.sp)
         }
+
+        val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    uriHandler.openUri("https://t.me/jatintomar028")
+                }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Send, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.4f), modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(16.dp))
+            Text("CONTACT DEVELOPER", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(0.4f), fontSize = 14.sp)
+        }
     }
 }
 
