@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search, Settings } from 'lucide-react';
+import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search, Settings, Lightbulb } from 'lucide-react';
 
 interface VocabItem {
   id: string;
@@ -596,8 +596,15 @@ export default function App() {
                       transition={{ delay: 0.2, duration: 0.8 }}
                       className="flex items-center gap-4 mb-4"
                     >
-                      <div className={`p-4 rounded-3xl ${accent.bg} shadow-2xl ${accent.shadow}`}>
-                        <Sparkles className="text-white" size={40} />
+                      <div className="relative">
+                        <motion.div 
+                          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                          className="absolute inset-0 blur-2xl bg-yellow-400/20 rounded-full z-0"
+                        />
+                        <div className="relative z-10 p-5 rounded-3xl bg-[#111111] shadow-2xl border border-white/10">
+                          <Lightbulb className="text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.9)]" size={64} strokeWidth={1.5} />
+                        </div>
                       </div>
                     </motion.div>
                     

@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
@@ -181,19 +182,37 @@ fun VocabSplashScreen(onTimeout: () -> Unit) {
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .background(colorScheme.primary, RoundedCornerShape(24.dp))
-                        .padding(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(40.dp)
+                val pulseAnim = rememberInfiniteTransition(label = "pulse")
+                val scale by pulseAnim.animateFloat(
+                    initialValue = 0.9f, 
+                    targetValue = 1.15f,
+                    animationSpec = infiniteRepeatable(tween(2000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                    label = "scalePulse"
+                )
+                
+                Box(contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .graphicsLayer(scaleX = scale, scaleY = scale, alpha = 0.4f)
+                            .background(Color(0xFFFACC15), CircleShape)
+                            .blur(16.dp)
                     )
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFF111111), RoundedCornerShape(24.dp))
+                            .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(24.dp))
+                            .padding(20.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = Color(0xFFFACC15),
+                            modifier = Modifier.size(56.dp)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
                 val letterSpacingAnim = remember { Animatable(0f) }
                 LaunchedEffect(Unit) {
