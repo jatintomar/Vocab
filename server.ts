@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 
 async function startServer() {
   const app = express();
@@ -11,24 +10,13 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // API Routes
+  // Serve static assets if any
+  app.use(express.static(process.cwd()));
 
-
-  if (process.env.NODE_ENV !== "production") {
-    // Development mode configuration
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    // Production mode configuration
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
+  // Always serve index.html
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "index.html"));
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
