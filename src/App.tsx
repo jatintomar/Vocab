@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
-import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search } from 'lucide-react';
+import { Trophy, Menu, X, Info, Sun, Moon, Download, Upload, ChevronLeft, ChevronRight, BookOpen, Zap, Star, LayoutGrid, Award, BrainCircuit, Sparkles, MessageSquareQuote, CheckCircle2, RotateCw, Search, Settings } from 'lucide-react';
 
 interface VocabItem {
   id: string;
@@ -712,12 +712,12 @@ export default function App() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={`absolute top-0 left-0 bottom-0 w-[75%] max-w-xs p-6 flex flex-col shadow-2xl ${theme.card} ${theme.text}`}
             >
-              <div className="flex justify-between items-center mb-10">
+              <div className="flex justify-between items-center mb-6">
                 <h2 className={`text-lg font-black ${accent.text} tracking-tight italic`}>JT DASHBOARD</h2>
                 <button onClick={() => setIsSidebarOpen(false)} className="opacity-50 hover:opacity-100 p-2"><X size={20} /></button>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 flex-1 overflow-y-auto no-scrollbar pb-6">
                 {/* Search Bar */}
                 <div className="mb-4">
                   <div className={`relative flex items-center p-3 rounded-2xl border ${theme.border} bg-white/5`}>
@@ -825,7 +825,7 @@ export default function App() {
                   }}
                   className="w-full flex items-center gap-3 p-4 rounded-3xl hover:bg-white/5 transition-all opacity-60 hover:opacity-100"
                 >
-                  <Sun size={20} />
+                  <Settings size={20} />
                   <p className="text-xs font-black uppercase tracking-widest">App Settings</p>
                 </button>
               </div>

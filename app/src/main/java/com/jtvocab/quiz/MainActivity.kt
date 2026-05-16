@@ -900,6 +900,7 @@ fun CategoryTabs(current: String, onSelect: (String) -> Unit) {
 @Composable
 fun QuizSection(viewModel: VocabViewModel) {
     val quizItems by viewModel.currentQuizBatch
+    val state by viewModel.state
     val quizCount = quizItems.count { it.isAnswered }
     val totalCount = quizItems.size
     val currentSetIndex by viewModel.currentSetIndex
