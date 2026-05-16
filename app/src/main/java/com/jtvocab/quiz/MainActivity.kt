@@ -810,20 +810,6 @@ fun SettingsDialog(viewModel: VocabViewModel, onClose: () -> Unit) {
                     }
                     Spacer(Modifier.height(12.dp))
                 }
-
-                Spacer(Modifier.height(32.dp))
-                Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
-                Spacer(Modifier.height(32.dp))
-
-                // Existing bottom actions (Export/Import) if we wanted to keep them
-                // But you only need the Divider probably
-                Divider(color = MaterialTheme.colorScheme.onSurface.copy(0.05f))
-                Spacer(Modifier.height(32.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SettingsActionButton(Icons.Default.KeyboardArrowDown, "EXPORT", modifier = Modifier.weight(1f))
-                    SettingsActionButton(Icons.Default.KeyboardArrowUp, "IMPORT", modifier = Modifier.weight(1f))
-                }
             }
         }
     }
@@ -959,9 +945,8 @@ fun QuizSection(viewModel: VocabViewModel) {
                 Spacer(Modifier.width(24.dp))
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    val score by viewModel.score
-                    Text("SCORE", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
-                    Text(score.toString(), fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                    Text("STREAK", fontSize = 8.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface.copy(0.4f))
+                    Text(state.streak.toString() + " 🔥", fontSize = 16.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

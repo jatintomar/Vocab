@@ -25,9 +25,6 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentSetIndex = mutableStateOf(0)
     val currentSetIndex: State<Int> = _currentSetIndex
 
-    private val _score = mutableStateOf(0)
-    val score: State<Int> = _score
-
     private val _searchQuery = mutableStateOf("")
     val searchQuery: State<String> = _searchQuery
 
@@ -144,7 +141,6 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
     fun startQuiz(cat: String, setIndex: Int, isWeakMode: Boolean = false) {
         _isChallengeMode.value = false
         _currentSetIndex.value = if (isWeakMode) -1 else setIndex
-        _score.value = 0
         val items = if (isWeakMode) {
             (_state.value.weakListOW + _state.value.weakListSY + _state.value.weakListID + _state.value.weakListPH).shuffled()
         } else {
@@ -196,11 +192,13 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
         _currentQuizBatch.value = currentBatch
 
         if (answer == quizItem.item.a) {
-            _score.value += 1
-            if (_score.value % 10 == 0) {
-                _state.value = _state.value.copy(streak = _state.value.streak + 1)
-                saveState()
+            val newScore = _state.value.score + 1
+            if (newScore % 10 == 0) {
+                _state.value = _state.value.copy(score = newScore, streak = _state.value.streak + 1)
+            } else {
+                _state.value = _state.value.copy(score = newScore)
             }
+            saveState()
         } else {
             addToWeakList(quizItem.item)
         }

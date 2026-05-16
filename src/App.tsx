@@ -292,7 +292,22 @@ export default function App() {
     }
     return 0;
   });
-  const [streak, setStreak] = useState(3);
+  const [streak, setStreak] = useState(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.streak !== undefined) return parsed.streak;
+    }
+    return 3;
+  });
+  const [score, setScore] = useState(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.score !== undefined) return parsed.score;
+    }
+    return 0;
+  });
   const [themeKey, setThemeKey] = useState<ThemeKey>(() => {
     const saved = localStorage.getItem('jt_vocab_v3');
     if (saved) {
@@ -439,7 +454,6 @@ export default function App() {
     const saved = localStorage.getItem('jt_vocab_v3');
     if (saved) {
       const parsed = JSON.parse(saved);
-      setStreak(parsed.streak ?? 3);
       setCompletedSets(parsed.completedSets || { ow: [], sy: [], id: [], pv: [] });
       setWeakList(parsed.weakList || { ow: [], sy: [], id: [], pv: [] });
       setCompletedChallengeDays(parsed.completedChallengeDays || []);
@@ -451,6 +465,7 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('jt_vocab_v3', JSON.stringify({ 
+      score,
       streak, 
       completedSets, 
       weakList, 
@@ -463,7 +478,7 @@ export default function App() {
       cat,
       curSet
     }));
-  }, [streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, curSet]);
+  }, [score, streak, completedSets, weakList, themeKey, accentKey, completedChallengeDays, activityHistory, achievements, challengeDay, cat, curSet]);
 
   const handleAnswer = (qIdx: number, item: VocabItem, choice: string) => {
     if (answered[qIdx]) return;
@@ -478,12 +493,20 @@ export default function App() {
 
     setAnswered(prev => ({ ...prev, [qIdx]: { selected: choice, correct: isCorrect } }));
     
-    if (!isCorrect) {
+    if (isCorrect) {
+      setScore(prev => {
+        const next = prev + 1;
+        if (next % 10 === 0) setStreak(s => s + 1);
+        return next;
+      });
+    } else {
       setWeakList(prev => {
         if (prev[itemCat].find(x => x.id === item.id)) return prev;
         return { ...prev, [itemCat]: [...prev[itemCat], item] };
       });
-    } else if (isWeakRevision && isCorrect) {
+    }
+    
+    if (isWeakRevision && isCorrect) {
       setWeakList(prev => ({
         ...prev,
         [itemCat]: prev[itemCat].filter(x => x.id !== item.id)
@@ -877,53 +900,6 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="h-px bg-white/5" />
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => {
-                      const data = localStorage.getItem('jt_vocab_v2');
-                      const blob = new Blob([data || '{}'], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `jt_vocab_backup_${new Date().toISOString().split('T')[0]}.json`;
-                      a.click();
-                    }}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border border-white/5 hover:bg-white/5 transition-all group`}
-                  >
-                    <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Export</span>
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = '.json';
-                      input.onchange = (e) => {
-                        const file = (e.target as HTMLInputElement).files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (re) => {
-                            try {
-                              const parsed = JSON.parse(re.target?.result as string);
-                              localStorage.setItem('jt_vocab_v2', JSON.stringify(parsed));
-                              window.location.reload();
-                            } catch (error) {
-                              alert('Invalid backup file');
-                            }
-                          };
-                          reader.readAsText(file);
-                        }
-                      };
-                      input.click();
-                    }}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-3xl border border-white/5 hover:bg-white/5 transition-all group`}
-                  >
-                    <Upload size={20} className="group-hover:-translate-y-0.5 transition-transform" />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Import</span>
-                  </button>
-                </div>
               </div>
             </motion.div>
           </div>
