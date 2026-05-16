@@ -10,9 +10,11 @@ import kotlinx.coroutines.launch
 import com.jtvocab.quiz.model.VocabItem
 import com.jtvocab.quiz.model.AppState
 import com.jtvocab.quiz.data.VocabRepository
+import com.google.gson.Gson
 
 class VocabViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    private val gson = Gson()
 
     private val _state = mutableStateOf(AppState())
     val state: State<AppState> = _state
@@ -54,6 +56,22 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
+        loadState()
+    }
+
+    private fun loadState() {
+        val json = prefs.getString("jt_vocab_state_v1", null)
+        if (json != null) {
+            try {
+                _state.value = gson.fromJson(json, AppState::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun saveState() {
+        prefs.edit().putString("jt_vocab_state_v1", gson.toJson(_state.value)).apply()
     }
 
     data class QuizItem(
@@ -65,10 +83,12 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAccentColor(color: Long) {
         _state.value = _state.value.copy(accentColor = color)
+        saveState()
     }
 
     fun setTheme(theme: String) {
         _state.value = _state.value.copy(theme = theme)
+        saveState()
     }
 
     private val _isChallengeMode = mutableStateOf(false)
@@ -161,6 +181,7 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
             weakListID = emptyList(),
             weakListPH = emptyList()
         )
+        saveState()
     }
 
     fun submitAnswer(quizIndex: Int, answer: String) {
@@ -178,6 +199,7 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
             _score.value += 1
             if (_score.value % 10 == 0) {
                 _state.value = _state.value.copy(streak = _state.value.streak + 1)
+                saveState()
             }
         } else {
             addToWeakList(quizItem.item)
@@ -197,6 +219,7 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
             _state.value = _state.value.copy(
                 completedChallengeDays = _state.value.completedChallengeDays + _challengeDay.value
             )
+            saveState()
         } else if (_currentSetIndex.value >= 0) {
             val cat = currentBatch.firstOrNull()?.item?.cat ?: ""
             _state.value = when(cat) {
@@ -206,6 +229,7 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
                 "ph" -> _state.value.copy(completedPH = _state.value.completedPH + _currentSetIndex.value)
                 else -> _state.value
             }
+            saveState()
         }
     }
 
@@ -258,5 +282,6 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
             weakListPH = if (item.cat == "ph" && !currentState.weakListPH.contains(item)) currentState.weakListPH + item else currentState.weakListPH
         )
         _state.value = newState
+        saveState()
     }
 }

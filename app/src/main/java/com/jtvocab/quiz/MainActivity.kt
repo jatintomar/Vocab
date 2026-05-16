@@ -3,6 +3,7 @@ package com.jtvocab.quiz
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -26,14 +27,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import android.app.Activity
 import com.jtvocab.quiz.viewmodel.VocabViewModel
 import com.jtvocab.quiz.model.*
 
@@ -41,6 +46,7 @@ import com.jtvocab.quiz.data.VocabRepository
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         VocabRepository.init(this)
         setContent {
@@ -105,7 +111,17 @@ fun VocabTheme(viewModel: VocabViewModel = viewModel(), content: @Composable () 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography(),
-        content = content
+        content = {
+            val view = LocalView.current
+            if (!view.isInEditMode) {
+                SideEffect {
+                    val window = (view.context as Activity).window
+                    window.statusBarColor = backgroundColor.toArgb()
+                    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isParchment
+                }
+            }
+            content()
+        }
     )
 }
 

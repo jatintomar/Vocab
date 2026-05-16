@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#030712</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.JT_VOCAB_QUIZ</item>
+    </style>
+
+    <style name="Theme.JT_VOCAB_QUIZ" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#030712</item>
+    </style>
+</resources>
