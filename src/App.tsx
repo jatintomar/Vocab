@@ -292,6 +292,15 @@ export default function App() {
     }
     return 0;
   });
+  const [activityHistory, setActivityHistory] = useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem('jt_vocab_v3');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.activityHistory) return parsed.activityHistory;
+    }
+    return {};
+  });
+
   const streak = useMemo(() => {
     let currentStreak = 0;
     const today = new Date();
@@ -355,7 +364,6 @@ export default function App() {
   const [answered, setAnswered] = useState<Record<number, { selected: string; correct: boolean }>>({});
   const [completedSets, setCompletedSets] = useState<Record<Category, number[]>>({ ow: [], sy: [], id: [], pv: [] });
   const [completedChallengeDays, setCompletedChallengeDays] = useState<number[]>([]);
-  const [activityHistory, setActivityHistory] = useState<Record<string, number>>({});
   const [achievements, setAchievements] = useState<string[]>([]);
   const [weakList, setWeakList] = useState<Record<Category, VocabItem[]>>({ ow: [], sy: [], id: [], pv: [] });
   const [showResults, setShowResults] = useState(false);
@@ -480,7 +488,6 @@ export default function App() {
       setCompletedSets(parsed.completedSets || { ow: [], sy: [], id: [], pv: [] });
       setWeakList(parsed.weakList || { ow: [], sy: [], id: [], pv: [] });
       setCompletedChallengeDays(parsed.completedChallengeDays || []);
-      setActivityHistory(parsed.activityHistory || {});
       setAchievements(parsed.achievements || []);
       setChallengeDay(parsed.challengeDay || 1);
     }

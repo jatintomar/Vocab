@@ -217,7 +217,7 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
                         lastCalendar.set(java.util.Calendar.MILLISECOND, 0)
                         
                         val diff = todayCalendar.timeInMillis - lastCalendar.timeInMillis
-                        val days = Math.round(diff / (1000f * 60f * 60f * 24f))
+                        val days = diff / 86400000L
                         
                         if (days == 1L) {
                             newStreak += 1
