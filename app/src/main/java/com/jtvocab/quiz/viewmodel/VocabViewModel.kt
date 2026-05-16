@@ -193,11 +193,55 @@ class VocabViewModel(application: Application) : AndroidViewModel(application) {
 
         if (answer == quizItem.item.a) {
             val newScore = _state.value.score + 1
-            if (newScore % 10 == 0) {
-                _state.value = _state.value.copy(score = newScore, streak = _state.value.streak + 1)
-            } else {
-                _state.value = _state.value.copy(score = newScore)
+            
+            val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+            val lastDate = _state.value.lastActiveDate
+            var newStreak = _state.value.streak
+
+            if (lastDate != todayStr) {
+                if (lastDate.isNotEmpty()) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                        val todayCalendar = java.util.Calendar.getInstance()
+                        val lastCalendar = java.util.Calendar.getInstance()
+                        lastCalendar.time = sdf.parse(lastDate)!!
+                        
+                        todayCalendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                        todayCalendar.set(java.util.Calendar.MINUTE, 0)
+                        todayCalendar.set(java.util.Calendar.SECOND, 0)
+                        todayCalendar.set(java.util.Calendar.MILLISECOND, 0)
+                        
+                        lastCalendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                        lastCalendar.set(java.util.Calendar.MINUTE, 0)
+                        lastCalendar.set(java.util.Calendar.SECOND, 0)
+                        lastCalendar.set(java.util.Calendar.MILLISECOND, 0)
+                        
+                        val diff = todayCalendar.timeInMillis - lastCalendar.timeInMillis
+                        val days = Math.round(diff / (1000f * 60f * 60f * 24f))
+                        
+                        if (days == 1L) {
+                            newStreak += 1
+                        } else if (days > 1L) {
+                            newStreak = 1
+                        }
+                    } catch (e: Exception) {
+                        newStreak = 1
+                    }
+                } else {
+                    newStreak = 1
+                }
             }
+
+            val currentState = _state.value
+            _state.value = currentState.copy(
+                score = newScore,
+                streak = newStreak,
+                lastActiveDate = todayStr,
+                weakListOW = if (quizItem.item.cat == "ow") currentState.weakListOW.filter { it.id != quizItem.item.id } else currentState.weakListOW,
+                weakListSY = if (quizItem.item.cat == "sy") currentState.weakListSY.filter { it.id != quizItem.item.id } else currentState.weakListSY,
+                weakListID = if (quizItem.item.cat == "id") currentState.weakListID.filter { it.id != quizItem.item.id } else currentState.weakListID,
+                weakListPH = if (quizItem.item.cat == "ph") currentState.weakListPH.filter { it.id != quizItem.item.id } else currentState.weakListPH
+            )
             saveState()
         } else {
             addToWeakList(quizItem.item)

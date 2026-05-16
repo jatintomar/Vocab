@@ -17,6 +17,7 @@ data class Achievement(
 
 data class AppState(
     val streak: Int = 0,
+    val lastActiveDate: String = "",
     val score: Int = 0,
     val completedOWS: Set<Int> = emptySet(),
     val completedSY: Set<Int> = emptySet(),

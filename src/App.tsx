@@ -292,14 +292,37 @@ export default function App() {
     }
     return 0;
   });
-  const [streak, setStreak] = useState(() => {
-    const saved = localStorage.getItem('jt_vocab_v3');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed.streak !== undefined) return parsed.streak;
+  const streak = useMemo(() => {
+    let currentStreak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let checkDate = new Date(today);
+    const todayStr = checkDate.toLocaleDateString("en-CA"); // YYYY-MM-DD
+
+    if (activityHistory[todayStr]) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      checkDate.setDate(checkDate.getDate() - 1);
+      const yesterdayStr = checkDate.toLocaleDateString("en-CA");
+      if (!activityHistory[yesterdayStr]) {
+        return 0;
+      }
     }
-    return 0;
-  });
+
+    while (true) {
+      const dateStr = checkDate.toLocaleDateString("en-CA");
+      if (activityHistory[dateStr]) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return currentStreak;
+  }, [activityHistory]);
+
   const [score, setScore] = useState(() => {
     const saved = localStorage.getItem('jt_vocab_v3');
     if (saved) {
@@ -494,23 +517,16 @@ export default function App() {
     setAnswered(prev => ({ ...prev, [qIdx]: { selected: choice, correct: isCorrect } }));
     
     if (isCorrect) {
-      setScore(prev => {
-        const next = prev + 1;
-        if (next % 10 === 0) setStreak(s => s + 1);
-        return next;
-      });
+      setScore(prev => prev + 1);
+      setWeakList(prev => ({
+        ...prev,
+        [itemCat]: prev[itemCat].filter(x => x.id !== item.id)
+      }));
     } else {
       setWeakList(prev => {
         if (prev[itemCat].find(x => x.id === item.id)) return prev;
         return { ...prev, [itemCat]: [...prev[itemCat], item] };
       });
-    }
-    
-    if (isWeakRevision && isCorrect) {
-      setWeakList(prev => ({
-        ...prev,
-        [itemCat]: prev[itemCat].filter(x => x.id !== item.id)
-      }));
     }
   };
 
