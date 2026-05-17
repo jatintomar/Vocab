@@ -744,7 +744,7 @@ fun SetSelector(currentCat: String, currentSet: Int, completedSets: Set<Int>, on
         else -> 0
     }
     val count = if (listSize > 0) (listSize + size - 1) / size else 10
-    val displayCount = minOf(count, 50) // Limit to 50 sets for UI sanity
+    val displayCount = count
 
     LazyRow(
         modifier = Modifier
